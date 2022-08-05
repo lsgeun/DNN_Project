@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import math
 import os
@@ -16,10 +15,10 @@ class FMD():
     ''' data_infos
     (origin_, eval_)names: 데이터 타입에 대한 이름
     (origin_, eval_)K: 피처 맵의 개수, L: 레이어의 개수(0~L-1는 각 레이어의 인덱스)
-    shape: 레이어의 넘파이 모양
+    shape: 레이어의 넘파이 모양; FMP_count: 피처 맵 패키지에 저장된 넘파이 개수
     '''
     origin_names = ["train", "rtest", "wtest"]; origin_K={}; eval_names = []; eval_K={}
-    L=0; shape=[]
+    L=0; shape=[]; FMP_count=0
     ''' FM_repres
     TFM_repre: 훈련 대표 피처 맵(베이스 피처 맵)
     RFM_repre: 정분류 대표 피처 맵
@@ -56,10 +55,12 @@ class FMD():
     norm_min, norm_max는 레이어 피처 맵 거리를 구하기 전에 정규화할 범위의 최소 최대를 나타낸다.
     '''
     W=[]; lfmd_select=[]; norm_min=0; norm_max=1
-    ''' fmdc
-    fmdc 피처 맵 거리 기준으로 어떤 데이터가 나중에 오분류 될 거 같은지 판단함.
+    ''' fmdc infos
+    fmdc: 피처 맵 거리 기준으로 어떤 데이터가 나중에 오분류 될 거 같은지 판단함.
+    rfmds: 정분류 피처 맵 거리들을 모아둔 것
+    wfmds: 오분류 피처 맵 거리들을 모아둔 것
     '''
-    fmdc=-1
+    fmdc=-1; rfmds=[]; wfmds=[]
     ''' eval_infos
     eval한 결과를 담거나 시각화 하기 위해 필요한 것
     eval 데이터 타입마다 eval_U, is_eval_FMD, fmds가 나온다.
@@ -70,6 +71,9 @@ class FMD():
     TPR, TNR, PPV, NPV, FNR, FPR, FDR, FOR
     '''
     eval_U={}; is_eval_FMD={}; fmds={}
+    '''CM_infos
+    CM_infos: Confusion Matrix로 효과성을 따지기 위해서 필요한 변수들의 모임이다
+    '''
     TP={}; FN={}; TN={}; FP={}; P={}; N={}
     TPR={}; TNR={}; PPV={}; NPV={}; FNR={}; FPR={}; FDR={}; FOR={}
     ''' square_NPs_infos
@@ -112,6 +116,7 @@ class FMD():
         self.set_data_infos_and_related()
         self.set_FM_repres()
         self.set_AMs_and_related()
+        self.set_fmds()
         self.set_fmdc()
 
     def set_root_dir(self, root_dir_):
@@ -138,7 +143,7 @@ class FMD():
         data_infos = open(f"{self.root_dir}/data_infos.txt", 'r')
         data_infos_strs = data_infos.read()
         data_infos_str_list = data_infos_strs.split('\n')
-        # * 0th: origin_K 
+        # * 0th: origin_K
         origin_K = list(map(int, data_infos_str_list[0].split()))
         origin_name_K_zip = zip(self.origin_names, origin_K) 
         for origin_name, origin_K in origin_name_K_zip:
@@ -156,6 +161,8 @@ class FMD():
         for l in range(self.L):
             shape_l = list(map(int,data_infos_str_list[4+l].split()))
             self.shape.append(shape_l)
+        # * 4+Lth: FMP_count
+        self.FMP_count = int(data_infos_str_list[4+self.L])
         # * root dir의 data_infos.txt 닫기
         data_infos.close()
 
@@ -174,15 +181,15 @@ class FMD():
             self.TPR[eval_name]=-1; self.TNR[eval_name]=-1; self.PPV[eval_name]=-1; self.NPV[eval_name]=-1
             self.FNR[eval_name]=-1; self.FPR[eval_name]=-1; self.FDR[eval_name]=-1; self.FOR[eval_name]=-1
         
-        # * W를 균등하게 만듦
-        for l in range(self.L):
-            self.W.append(1/self.L)
         # ! W를 등차수열로 만듦
         # for l in range(self.L):
         #     self.W.append((l+1)*(2/(self.L*(self.L+1))))
+        # * W를 균등하게 만듦
+        for l in range(self.L):
+            self.W.append(1/self.L)
 
     def set_FM_repres(self):
-        
+        # * 새로운 데이터를 받기 전에 빈 배열로 초기화 함.
         self.TFM_repre=[]; self.RFM_repre=[]; self.WFM_repre=[];
 
         # 인스턴스 속성을 변수로 포인터처럼 가르킴
@@ -209,15 +216,15 @@ class FMD():
                 OFM_repre.append(OFM_repre_l)
 
             # OFMP_k는 k번째 origin 데이터가 속한 FMP임
-            # k번 째 데이터의 OFMPI는 OFMPI_k = k // 1000임
-            # k번 째 데이터의 OFMPO은 OFMPO_k = k % 1000임
+            # k번 째 데이터의 OFMPI는 OFMPI_k = k // self.FMP_count임
+            # k번 째 데이터의 OFMPO은 OFMPO_k = k % self.FMP_count임
             OFMP_k = None; prev_OFMPI_k = None; cur_OFMPI_k = None
 
             k = 0
             # * 0번 째 데이터로 OFM_repre를 초기화한다.
             # 0번 째 데이터가 속한 OFMP_k를 불러들인 후
-            prev_OFMPI_k = k // 1000
-            OFMPO_k = k % 1000
+            prev_OFMPI_k = k // self.FMP_count
+            OFMPO_k = k % self.FMP_count
             with open(f'{origin_dir}/{origin}_{prev_OFMPI_k}.pickle', 'rb') as f:
                 OFMP_k = pickle.load(f)
             # 0번 째 데이터를 OFM_repre에 넣는다.
@@ -229,8 +236,8 @@ class FMD():
             # * 1~K-1번 째 데이터로 OFM_repre을 구한다.
             for k in range(1, origin_K):
                 # k번 째 데이터의 OFMPI, OFMPO 구함
-                cur_OFMPI_k = k // 1000
-                OFMPO_k = k % 1000
+                cur_OFMPI_k = k // self.FMP_count
+                OFMPO_k = k % self.FMP_count
                 
                 # * OFMP_k가 이미 램에 있다면 가지고 오지 않고
                 # * 램에 없다면 이전 OFMP를 램에서 지우고 현재 OFMP를 램으로 가지고 온다.
@@ -269,7 +276,7 @@ class FMD():
 
         # [hyperparameter] alpha_slice를 일단 1000으로 함
         for l in range(self.L):
-            self.alpha_slice.append(1000)
+            self.alpha_slice.append(100)
 
         # alpha의 최소값과 최대값을 구함
         self.alpha_min = np.zeros(self.L)
@@ -487,57 +494,49 @@ class FMD():
 
         return fmd
     
-    def set_fmdc(self):
-        # fmds는 오분류 테스트 데이터에 대한 fmd를 저장함
-        rfmds=[]
-        wfmds=[]
+    def set_fmds(self):
+        # self.rfmds, self.wfmds는 정분류 테스트 데이터, 오분류 테스트 데이터에 대한 fmd를 저장함
+        # * 새로운 데이터를 받기 전에 빈 배열로 초기화 함.
+        self.rfmds=[]
+        self.wfmds=[]
 
-        # RFM와 WFM을 부르기 위한 변수들을 선언함
-        rtest=self.origin_names[1]; rtest_dir=self.rtest_dir; rtest_K=self.origin_K[rtest]
-        RFMP_k=None; prev_RFMPI_k=None; cur_RFMPI_k=None;
-        wtest=self.origin_names[2]; wtest_dir=self.wtest_dir; wtest_K=self.origin_K[wtest]
-        WFMP_k=None; prev_WFMPI_k=None; cur_WFMPI_k=None;
+        rtest = self.origin_names[1]; wtest = self.origin_names[2]
 
-        for k in range(wtest_K):
-            # k번 째 데이터의 FMPI, FMPO 구함
-            cur_RFMPI_k = k // 1000
-            RFMPO_k = k % 1000
-            cur_WFMPI_k = k // 1000
-            WFMPO_k = k % 1000
+        def set_fmds(test_name):
+            # RFM와 WFM을 부르기 위한 변수들을 선언함
+            if test_name=="rtest":
+                test=self.origin_names[1]; test_dir=self.rtest_dir; test_K=self.origin_K[test]
+                FMP_k=None; prev_FMPI_k=None; cur_FMPI_k=None; fmds = self.rfmds
+            elif test_name=="wtest":
+                test=self.origin_names[2]; test_dir=self.wtest_dir; test_K=self.origin_K[test]
+                FMP_k=None; prev_FMPI_k=None; cur_FMPI_k=None; fmds = self.wfmds
 
-            # FMP_k가 이미 있다면 가지고 오지 않고
-            #             없다면 이전 FMP를 지우고 현재 FMP를 가지고 온다.
-            if cur_RFMPI_k == prev_RFMPI_k:
-                pass
-            else:
-                del RFMP_k
-                with open(f'{rtest_dir}/{rtest}_{cur_RFMPI_k}.pickle', 'rb') as f:
-                    RFMP_k = pickle.load(f)
+            for k in range(test_K):
+                # k번 째 데이터의 FMPI, FMPO 구함
+                cur_FMPI_k = k // self.FMP_count
+                FMPO_k = k % self.FMP_count
 
-            if cur_WFMPI_k == prev_WFMPI_k:
-                pass
-            else:
-                del WFMP_k
-                with open(f'{wtest_dir}/{wtest}_{cur_WFMPI_k}.pickle', 'rb') as f:
-                    WFMP_k = pickle.load(f)
+                # FMP_k가 이미 있다면 가지고 오지 않고 없다면 이전 FMP를 지우고 현재 FMP를 가지고 온다.
+                if cur_FMPI_k == prev_FMPI_k:
+                    pass
+                else:
+                    del FMP_k
+                    with open(f'{test_dir}/{test}_{cur_FMPI_k}.pickle', 'rb') as f:
+                        FMP_k = pickle.load(f)
 
-            prev_RFMPI_k = cur_RFMPI_k
-            prev_WFMPI_k = cur_WFMPI_k
+                prev_FMPI_k = cur_FMPI_k
 
-            RFM_k = RFMP_k[RFMPO_k]
-            WFM_k = WFMP_k[WFMPO_k]
+                FM_k = FMP_k[FMPO_k]
 
-            rfmds.append(self.fmd(RFM_k))
-            wfmds.append(self.fmd(WFM_k))
+                fmds.append(self.fmd(FM_k))
 
-        # test를 모두 순회하고 난 후 FMP_k의 기억공간을 램에서 제거
-        del RFMP_k
-        del WFMP_k
-
-        rfmds = np.array(rfmds)
-        wfmds = np.array(wfmds)
+            # test를 모두 순회하고 난 후 FMP_k의 기억공간을 램에서 제거
+            del FMP_k
         
-        # TODO fmdc 정하는 기준 분석해보기
+        set_fmds(rtest); self.rfmds = np.array(self.rfmds)
+        set_fmds(wtest); self.wfmds = np.array(self.wfmds)
+
+    def set_fmdc(self):        
         # self.fmdc = wfmds.mean() # !
         # self.fmdc = wfmds[len(wfmds) // 2] # !
         # self.fmdc = wfmds[(len(wfmds) // 3) * 2] # !
@@ -545,7 +544,7 @@ class FMD():
         # self.fmdc = (rfmds.max() + wfmds.min()) / 2 # !
         # print(f'rfmds.max(): {rfmds.max()}, wfmds.min(): {wfmds.min()}') # !
         # self.fmdc = rfmds.max() # !
-        self.fmdc = wfmds.min()
+        self.fmdc = self.wfmds.min()
 
     def eval(self):
         # * 새로운 데이터를 받을 수 있게끔 속성을 초기 상태로 만듦.
@@ -562,8 +561,8 @@ class FMD():
 
             for k in range(eval_K):
                 # k번 째 데이터의 EFMPI, EFMPO 구함
-                cur_EFMPI_k = k // 1000
-                EFMPO_k = k % 1000
+                cur_EFMPI_k = k // self.FMP_count
+                EFMPO_k = k % self.FMP_count
 
                 # EFMP_k가 이미 있다면 가지고 오지 않고
                 #             없다면 이전 EFMP를 지우고 현재 EFMP를 가지고 온다.
@@ -623,8 +622,11 @@ class FMD():
             # self.TP[eval_name] + self.FP[eval_name]가 0이 되는 경우가 발생할 때 그것으로 나누지 않음
             # 초기화된 -1 값을 그대로 가지고 감
             if self.TP[eval_name] + self.FP[eval_name] > 0:
-                self.PPV[eval_name] = self.TP[eval_name] / (self.TP[eval_name] + self.FP[eval_name]); self.NPV[eval_name] = self.TN[eval_name] / (self.FN[eval_name] + self.TN[eval_name])
-                self.FDR[eval_name] = self.FP[eval_name] / (self.TP[eval_name] + self.FP[eval_name]); self.FOR[eval_name] = self.FN[eval_name] / (self.FN[eval_name] + self.TN[eval_name])
+                self.PPV[eval_name] = self.TP[eval_name] / (self.TP[eval_name] + self.FP[eval_name])
+                self.FDR[eval_name] = self.FP[eval_name] / (self.TP[eval_name] + self.FP[eval_name])
+            if self.FN[eval_name] + self.TN[eval_name] > 0:
+                self.NPV[eval_name] = self.TN[eval_name] / (self.FN[eval_name] + self.TN[eval_name])
+                self.FOR[eval_name] = self.FN[eval_name] / (self.FN[eval_name] + self.TN[eval_name])
     
     def set_square_NPs_infos(self, figsize=None, column=None):
         if figsize!=None:
@@ -674,8 +676,9 @@ class FMD():
         print("self.r_minus_w_max"); print(self.r_minus_w_max)
 
         print("self.DAM_select"); print(self.DAM_select)
+        # TODO self.DAM_indexes 요약적으로 표시하게 하기
+        # print("self.DAM_indexes"); print(self.DAM_indexes)
         print("self.DAM"); self.show_square_NPs(self.DAM.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
-        print("self.DAM_indexes"); print(self.DAM_indexes)
 
     def show_hyper_parameter(self):
         print("self.alpha_slice"); print(self.alpha_slice)
@@ -686,6 +689,14 @@ class FMD():
     def show_layer_infos(self):
         print("self.lfmd_select"); print(self.lfmd_select)
         print("self.W"); print(self.W)
+        print("self.norm_min"); print(self.norm_min)
+        print("self.norm_max"); print(self.norm_max)
+
+    def show_fmds_box_plot(self):
+        # TODO fmdc 정하는 기준 분석해보기
+        plt.boxplot([self.rfmds, self.wfmds],notch=True)
+
+        plt.show()
 
     def show_fmdc(self):
         print("self.fmdc"); print(self.fmdc)
@@ -721,7 +732,7 @@ class FMD():
             # 그게 아니라면 마지막에 넘파이에 np_arr_slice로 잘린 연속적인 값들을 넣음.
             else:
                 # np_arr_slice: np_arr_min 부터 np_arr_max 까지 그리는데 몇 번에 걸쳐서 그릴지 정하기
-                np_arr_slice = 1000
+                np_arr_slice = 1024
                 np_arr_interval = (np_arr_max - np_arr_min) / np_arr_slice
                 # np_arr에 np_arr의 최소의 값부터 최대 값까지 그리는 넘파이 생성
                 np_min_to_max = np.array([np_arr_min + i*np_arr_interval for i in range(np_arr_slice+1)])
@@ -779,12 +790,57 @@ class FMD():
             print()
 
     def show_fmd_right_ratio_graph(self):
-        for eval_name in self.eval_names:
+        # subplot 모양을 지정하기 위한 row, column
+        column = 5; row = (len(self.eval_names)-1 // column) + 1
+        # figure 크기를 지정함
+        plt.figure(figsize=[30,20])
+
+        for i, eval_name in enumerate(self.eval_names):
+            # fmdX는 그래프에서 X축(fmd)에 해당하는 부분, RRY는 그래프에서 Y축(Right Ratio)에 해당하는 부분
+            fmdX = []; RRY = []
             fmds = copy.deepcopy(self.fmds[eval_name])
-            # TODO fmd 정분류 비율 그래프 그리는 메소드 구현
+            fmd_min = fmds.min(); fmd_max = fmds.max() # fmds 최소값, 최대값 찾음.
+            fmd_slice = (self.eval_K[eval_name] // 10) + 1
+            fmd_interval = (fmd_max - fmd_min) / fmd_slice
+
+            # 각 interval을 순회하며 fmd(interval의 중앙값)과 RR(정분류 비율)을 구함
+            for s in range(fmd_slice):
+                # 각 interval의 중앙값으로 fmd에 할당
+                interval_min = fmd_min + s*fmd_interval; interval_max = fmd_min + (s+1)*fmd_interval
+                fmd = (interval_min + interval_max) / 2
+                # 각 interval의 정분류 비율을 RR에 할당
+                upper_than_interval_min = 0
+                lower_than_interval_max = 0
+                if s != fmd_slice-1:
+                    upper_than_interval_min = fmds >= interval_min
+                    lower_than_interval_max = fmds < interval_max
+                else:
+                    upper_than_interval_min = fmds >= interval_min
+                    lower_than_interval_max = fmds <= interval_max
+                
+                interval_values_maker = np.logical_and(upper_than_interval_min, lower_than_interval_max)
+                is_right_interval_values = self.eval_U[eval_name][interval_values_maker]
+                R = len(np.nonzero(is_right_interval_values)[0]); W  = len(is_right_interval_values) - R
+                
+                if R+W == 0:
+                    RR = -1
+                else:
+                    RR = R / (R + W)
+
+                fmdX.append(fmd)
+                RRY.append(RR)
+            
+            ones = [1 for i in range(fmd_slice)]
+
+            plt.subplot(row, column, i+1)
+            plt.scatter(x=fmdX, y=RRY, s=ones)
+            plt.ylim(-0.5, 1.5)
+        
+        plt.show()
+
 
     def show_CM_venn_diagrams(self):
-        def show_one_CM_venn_diagram(eval_name, TP, FP, TN, FN):
+        def show_CM_venn_diagram(eval_name, TP, FP, TN, FN):
             plt.figure(figsize=(10,8))
             # eval_U, 직사각형
             box_left = np.array([[-100, i] for i in range(-50, 50+1)])
@@ -803,7 +859,7 @@ class FMD():
             plt.plot(box_x, box_y, 'go')
             # eval_FMD, 타원
             ellipse = [[-75,0]]
-            x_range = [-75 + i*(75*2/1000) for i in range(1000+1)]
+            x_range = [-75 + i*(75*2/999) for i in range(999+1)]
             for i in x_range:
                 ellipse.append([i,  np.sqrt((30**2)*(1-(i**2)/(75**2)))])
             ellipse.append([75,0])
@@ -859,21 +915,22 @@ class FMD():
             plt.text(x=25, y=-40, s=f"{eval_name}", fontdict={'color': 'orange','size': 16})
             plt.show()
         for eval_name in self.eval_names:
-            show_one_CM_venn_diagram(eval_name, self.TP[eval_name], self.FP[eval_name], self.TN[eval_name], self.FN[eval_name])
+            show_CM_venn_diagram(eval_name, self.TP[eval_name], self.FP[eval_name], self.TN[eval_name], self.FN[eval_name])
     
     def show_efficience_and_FMD_ratio(self):
         for eval_name in self.eval_names:
             print(f"In {eval_name}")
-            # 긍정적 정밀성(TPR)
-            print(f"긍정적 정밀성(TPP) = {self.TPR[eval_name]}")
-            # 부정적 정밀성(TNR)
-            print(f"부정적 정밀성(TNP) = {self.TNR[eval_name]}")
+            print(f"오분류 비율 U = WR_U(N) = {self.N[eval_name]}", end=', ') # 오분류 비율 U = WR_U(N)
+            print(f"오분류 비율 FMD = WR_FMD(NPV) = {self.NPV[eval_name]}") # 오분류 비율 FMD = WR_FMD(NPV)
+            print()
+            print(f"긍정적 정밀성(TPP) = {self.TPR[eval_name]}", end=', ') # 정분류 정밀성(TPR)
+            print(f"부정적 정밀성(TNP) = {self.TNR[eval_name]}")# 오분류 정밀성(TNR)
+            print()
             # FMD ratio
             eval_U_size = len(self.eval_U[eval_name])
-            eval_FMD_size = len(np.nonzero(self.eval_FMD[eval_name])[0])
-            print(f"FMD 비율(|eval_FMD|/|eval_U|) = {eval_FMD_size/eval_size}")
-            # 띄어쓰기
-            print()
+            eval_FMD_size = len(np.nonzero(self.eval_U[eval_name][self.is_eval_FMD[eval_name]])[0])
+            print(f"FMD 비율(|eval_FMD|/|eval_U|) = {eval_FMD_size/eval_U_size}")
+            print('-'*30) # 구분선
 
     def save(self, model_name):
         # 인자로 지정된 경로와 이름으로 파일 저장
