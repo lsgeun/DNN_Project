@@ -4,83 +4,63 @@ import math
 import os
 import pickle
 import copy
+import itertools
 
 class FMD():
-    ''' dir_infos
-    root_dir: 관련된 데이터가 모두 저장되어 있는 디렉토리 경로
-    origin_dir: train, rtest, wtest가 있는 디렉토리
-    eval_dir: 거리를 잴 데이터가 있는 디렉토리
+    square_NPs_figsize=[60, 60]; square_NPs_column=7
+    ''' square_NPs_infos
+    square_NPs_figsize: show_square_NPs에서 그려지는 그래프의 figsize를 조절한다.
+    square_NPs_columns: show_square_NPs에서 그려지는 그래프의 column을 조절한다.
     '''
     root_dir=""; origin_dir=""; eval_dir=""
+    ''' dir_infos
+    root_dir: 관련된 데이터가 모두 저장되어 있는 디렉토리 경로
+    origin_dir: train, rvalid, wvalid가 있는 디렉토리
+    eval_dir: 거리를 잴 데이터가 있는 디렉토리
+    '''
+    origin_names = ["train", "rvalid", "wvalid"]; origin_K={}; eval_names = []; eval_K={}
+    L=0; shape=[]; FMP_count=0
     ''' data_infos
     (origin_, eval_)names: 데이터 타입에 대한 이름
-    (origin_, eval_)K: 피처 맵의 개수, L: 레이어의 개수(0~L-1는 각 레이어의 인덱스)
-    shape: 레이어의 넘파이 모양; FMP_count: 피처 맵 패키지에 저장된 넘파이 개수
+    (origin_, eval_)K: 피처 맵의 개수
+    L: 레이어의 개수(0~L-1는 각 레이어의 인덱스)
+    shape: 레이어의 넘파이 모양
+    FMP_count: 피처 맵 패키지에 저장된 넘파이 개수
     '''
-    origin_names = ["train", "rtest", "wtest"]; origin_K={}; eval_names = []; eval_K={}
-    L=0; shape=[]; FMP_count=0
-    ''' FM_repres
+    TFM_repre={}; RFM_repre={}; WFM_repre={}
+    ''' fixed_FM_repres
     TFM_repre: 훈련 대표 피처 맵(베이스 피처 맵)
     RFM_repre: 정분류 대표 피처 맵
     WFM_repre: 오분류 대표 피처 맵
     '''
-    TFM_repre=[]; RFM_repre=[]; WFM_repre=[]
-    ''' AMs
-    TAM: 훈련 활성화 피처 맵
-    RAM: 정분류 활성화 피처 맵
-    WAM: 오분류 활성화 피처 맵
+    alpha_min={}; alpha_max={}
+    ''' fixed_alpha_infos
+    alpha_min, alpha_max: 각 레이어에서의 alpha가 가질 수 있는 최소값 최대값을 나타낸 것이다.
     '''
-    TAM=[]; RAM=[]; WAM=[]
-    ''' alpha_infos
-    alpha는 거리 계산을 위한 인덱스를 고르기 위해 필요한 변수이다.
-    r_minus_w_max(= max(r-w))는 나중에 alpha 값에 의존하여 최대로 만들어진다.
-    alpha_min, alpha_max는 각 레이어에서의 alpha가 가질 수 있는 최소값 최대값을 나타낸 것이다.
-    [hyper parameter] alpha_slice은 alpha_min에서 alpha_max로 몇 번의의 간격으로 도착할지 알려주는 변수임.
-    '''
-    # TODO alpha마다 효과성을 따질 수 있게 하기
-    alpha=[]; alpha_slice=[]; r_minus_w_max=[]
-    alpha_min=[]; alpha_max=[]
-    ''' DAM_infos
-    DAM_indexes는 나중에 거리 계산할 때 쓰이는 다차원 인덱스들의 집합이다. 각 원소는 피처 맵의 한 원소의 인덱스를 나타낸다.
-    각 레이어마다 튜플들 세트가 있어야 함. np.array의 item 메소드를 사용할 것이기 때문
-    DAM: 거리 활성화 맵, DAM는 거리 계산을 위한 인덱스만 활성된 맵이다.
-    [hyper parameter] DAM_select는 DAM를 고르는 방법을 알려줌.
-    '''
-    DAM_indexes=[]; DAM=[]; DAM_select=[]
-    ''' layer_infos
-    [hyper parameter] W는 각 레이어의 피처 맵에 곱할 weight 중요도이다
-    레이어 피처 맵에 대한 가시적인 출력을 위해 1차 이상의 배열을 2차원 배열로 바꿈
-    square_NPs_side은 1차 이상의 배열을 2차원 배열로 바꾸기 위해 필요한 2차원 배열의 한 변의 길이임.
-    [hyper parameter] lfmd_select는 각 레이어에 대한 피처 맵을 구하는 방법을 저장한다.
+    norm_min=0; norm_max=1
+    ''' fixed_layer_infos
     norm_min, norm_max는 레이어 피처 맵 거리를 구하기 전에 정규화할 범위의 최소 최대를 나타낸다.
     '''
-    W=[]; lfmd_select=[]; norm_min=0; norm_max=1
-    ''' fmdc infos
-    fmdc: 피처 맵 거리 기준으로 어떤 데이터가 나중에 오분류 될 거 같은지 판단함.
-    rfmds: 정분류 피처 맵 거리들을 모아둔 것
-    wfmds: 오분류 피처 맵 거리들을 모아둔 것
-    '''
-    fmdc=-1; rfmds=[]; wfmds=[]
-    ''' eval_infos
-    eval한 결과를 담거나 시각화 하기 위해 필요한 것
-    eval 데이터 타입마다 eval_U, is_eval_FMD, fmds가 나온다.
+    eval_U={}
+    ''' fixed_eval_infos
     eval_U는 데이터의 정분류(True), 오분류(False) 유무를 True, False로 담는다
-    is_eval_FMD는 데이터가 is_eval_FMD이면 True, ts_fmd가 아니면 False를 담는다.
-    fmds는 데이터의 fmd를 담는다.
-    TP, FN, TN, FP는 confusion matrix를 표현하기 위한 가장 기본적인 속성이다.
-    TPR, TNR, PPV, NPV, FNR, FPR, FDR, FOR
     '''
-    eval_U={}; is_eval_FMD={}; fmds={}
-    '''CM_infos
-    CM_infos: Confusion Matrix로 효과성을 따지기 위해서 필요한 변수들의 모임이다
+    FM_repre_MHP=[]; alpha_MHP=[]; DAM_MHP=[]; lfmd_MHP=[]; W_MHP=[]; fmdc_MHP=[]
+    ''' [MHP= meta hyper parameter]
+    각 하이퍼 파라미터의 경우의 수들의 곱만큼 평가한다.
+    FM_repre_HPs: 평가하고 싶은 FM_repre 종류 모두를 지정한다. FM_repre_HPs는 'mean', 'min', 'max'가 있다.
+    alpha_MHP: rmw_max로 할지, 특정 alpha 값들로 할지 지정할 수 있다. Ex. alpha_MHP = [['rmw', 100], [1,2,3,4,5,6]]
+    DAM_HPs: 평가하고 싶은 DAM 종류 모두를 지정한다. DAM_HPs은 'and', 'or', 'wfm', 'all'이 있다.
+    W_HPs: 평가하고 싶은 W 종류 모두를 지정한다. W_HPs은 'C'=constant, 'I'=increasing 있다.
+    lfmd_HPs: 평가하고 싶은 lfmd 종류 모두를 지정한다. lfmd_HPs은 'se_lfmd', 'Ln_lfmd'가 있다.
+    fmdc_HPs: 평가하고 싶은 fmdc 종류 모두를 지정한다. fmdc_HPs는 'rM', 'rA', 'wm', 'wA', 'rMwmA'(M: Max, m: min, A:Average)가 있다.
     '''
-    TP={}; FN={}; TN={}; FP={}; P={}; N={}
-    TPR={}; TNR={}; PPV={}; NPV={}; FNR={}; FPR={}; FDR={}; FOR={}
-    ''' square_NPs_infos
-    square_NPs_figsize는 show_square_NPs에서 그려지는 그래프의 figsize를 조절한다.
-    square_NPs_columns은 show_square_NPs에서 그려지는 그래프의 column을 조절한다.
+
+    INSTs={}; INST_names=[]
+    ''' INST_infos
+    INSTs: 하이퍼 파라미터들이 INST 이름이고 하이퍼 파라미터마다 변하는 속성을 담는 딕셔너리
+    INST_names: 하이퍼 파라미터들로 만들어진 INST 이름들의 모임
     '''
-    square_NPs_figsize=[3*20, 8*20]; square_NPs_column=10
 
     def __init__(self, root_dir_=""):
 
@@ -96,9 +76,9 @@ class FMD():
         # 훈련 피처 맵을 저장하는 디렉토리
         self.train_dir=f"{self.origin_dir}/{self.origin_names[0]}"
         # 정분류 피처 맵을 저장하는 디렉토리
-        self.rtest_dir=f"{self.origin_dir}/{self.origin_names[1]}"
+        self.rvalid_dir=f"{self.origin_dir}/{self.origin_names[1]}"
         # 오분류 피처 맵을 저장하는 디렉토리
-        self.wtest_dir=f"{self.origin_dir}/{self.origin_names[2]}"
+        self.wvalid_dir=f"{self.origin_dir}/{self.origin_names[2]}"
         # * eval 디렉토리
         self.eval_dir = f"{self.root_dir}/eval"
 
@@ -111,14 +91,6 @@ class FMD():
         if not is_there_instances:
             os.system(f"mkdir {root_dir}/instances")
 
-    def fit(self):
-        # 객체의 속성 초기화
-        self.set_data_infos_and_related()
-        self.set_FM_repres()
-        self.set_AMs_and_related()
-        self.set_fmds()
-        self.set_fmdc()
-
     def set_root_dir(self, root_dir_):
         # * root 디렉토리
         self.root_dir = root_dir_
@@ -128,17 +100,14 @@ class FMD():
         # * 훈련을 저장하는 디렉토리
         self.train_dir=f"{self.origin_dir}/{self.origin_names[0]}"
         # * 정분류 테스트를 저장하는 디렉토리
-        self.rtest_dir=f"{self.origin_dir}/{self.origin_names[1]}"
+        self.rvalid_dir=f"{self.origin_dir}/{self.origin_names[1]}"
         # * 오분류 테스트를 저장하는 디렉토리
-        self.wtest_dir=f"{self.origin_dir}/{self.origin_names[2]}"
+        self.wvalid_dir=f"{self.origin_dir}/{self.origin_names[2]}"
         
         # * eval 디렉토리
         self.eval_dir = f"{self.root_dir}/eval"
 
-    def set_data_infos_and_related(self):
-        # * 새로운 데이터를 받을 수 있게끔 속성을 초기 상태로 만듦.
-        self.shape = []; self.lfmd_select = []; self.W = []
-
+    def set_data_infos(self):
         # * root dir의 data_infos.txt 열기
         data_infos = open(f"{self.root_dir}/data_infos.txt", 'r')
         data_infos_strs = data_infos.read()
@@ -158,6 +127,7 @@ class FMD():
         # * 3th: L
         self.L = int(data_infos_str_list[3])
         # * 4+0th ~ 4+(L-1)th: shape
+        self.shape = []
         for l in range(self.L):
             shape_l = list(map(int,data_infos_str_list[4+l].split()))
             self.shape.append(shape_l)
@@ -166,34 +136,13 @@ class FMD():
         # * root dir의 data_infos.txt 닫기
         data_infos.close()
 
-        # * 레이어 피처 맵을 구하는 방식을 se_lfmd 모두 통일
-        for l in range(self.L):
-            self.lfmd_select.append("se_lfmd")
-        
-        # * eval한 결과를 담거나 시각화하기 위한 값들을 초기화
+        # * 이것도 초기 데이터에 포함됨.
         for eval_name in self.eval_names:
             self.eval_U[eval_name] = np.load(f'{self.eval_dir}/{eval_name}/{eval_name}_eval_U.npy')
-            self.is_eval_FMD[eval_name] = []
-            self.fmds[eval_name] = []
-
-            self.TP[eval_name]=-1; self.FN[eval_name]=-1; self.TN[eval_name]=-1; self.FP[eval_name]=-1
-            self.N[eval_name]=-1; self.P[eval_name]=-1
-            self.TPR[eval_name]=-1; self.TNR[eval_name]=-1; self.PPV[eval_name]=-1; self.NPV[eval_name]=-1
-            self.FNR[eval_name]=-1; self.FPR[eval_name]=-1; self.FDR[eval_name]=-1; self.FOR[eval_name]=-1
-        
-        # ! W를 등차수열로 만듦
-        # for l in range(self.L):
-        #     self.W.append((l+1)*(2/(self.L*(self.L+1))))
-        # * W를 균등하게 만듦
-        for l in range(self.L):
-            self.W.append(1/self.L)
 
     def set_FM_repres(self):
-        # * 새로운 데이터를 받기 전에 빈 배열로 초기화 함.
-        self.TFM_repre=[]; self.RFM_repre=[]; self.WFM_repre=[];
-
         # 인스턴스 속성을 변수로 포인터처럼 가르킴
-        train = self.origin_names[0]; rtest = self.origin_names[1]; wtest = self.origin_names[2]
+        train = self.origin_names[0]; rvalid = self.origin_names[1]; wvalid = self.origin_names[2]
         L = self.L; shape = self.shape
 
         def set_FM_repre(origin):
@@ -202,18 +151,23 @@ class FMD():
 
             if origin == train:
                 OFM_repre = self.TFM_repre; origin_dir = self.train_dir;
-            elif origin == rtest:
-                OFM_repre = self.RFM_repre; origin_dir = self.rtest_dir;
-            elif origin == wtest:
-                OFM_repre = self.WFM_repre; origin_dir = self.wtest_dir;
+            elif origin == rvalid:
+                OFM_repre = self.RFM_repre; origin_dir = self.rvalid_dir;
+            elif origin == wvalid:
+                OFM_repre = self.WFM_repre; origin_dir = self.wvalid_dir;
             else:
                 print('잘못된 origin: ', origin, sep='')
                 return
 
+            # * OFM_repre의 min, mean, max 리스트 생성
+            OFM_repre['FM_min']=[]; OFM_repre['FM_mean']=[]; OFM_repre['FM_max']=[]
+
             # * 각 레이어의 피처 맵을 0으로 초기화하여 생성
             for l in range(L):
-                OFM_repre_l = np.zeros(shape[l])
-                OFM_repre.append(OFM_repre_l)
+                OFM_repre_zeros_l = np.zeros(shape[l])
+                OFM_repre['FM_min'].append(OFM_repre_zeros_l)
+                OFM_repre['FM_mean'].append(OFM_repre_zeros_l)
+                OFM_repre['FM_max'].append(OFM_repre_zeros_l)
 
             # OFMP_k는 k번째 origin 데이터가 속한 FMP임
             # k번 째 데이터의 OFMPI는 OFMPI_k = k // self.FMP_count임
@@ -230,7 +184,9 @@ class FMD():
             # 0번 째 데이터를 OFM_repre에 넣는다.
             for l in range(L):
                 OFM_k_l = OFMP_k[OFMPO_k][l]
-                OFM_repre[l] = OFM_repre[l] + OFM_k_l
+                OFM_repre['FM_min'][l] = OFM_repre['FM_min'][l] + OFM_k_l
+                OFM_repre['FM_mean'][l] = OFM_repre['FM_mean'][l] + OFM_k_l
+                OFM_repre['FM_max'][l] = OFM_repre['FM_max'][l] + OFM_k_l
 
             # k = 1 ~ K-1
             # * 1~K-1번 째 데이터로 OFM_repre을 구한다.
@@ -257,145 +213,334 @@ class FMD():
 
                 for l in range(L):
                     OFM_k_l = OFMP_k[OFMPO_k][l]
-                    OFM_repre[l] = (OFM_repre[l]*k + OFM_k_l)/(k+1)
+                    OFM_repre['FM_mean'][l] = (OFM_repre['FM_mean'][l]*k + OFM_k_l)/(k+1)
+                    OFM_repre_min_l_mask = OFM_repre['FM_min'][l] > OFM_k_l
+                    OFM_repre_max_l_mask = OFM_repre['FM_max'][l] < OFM_k_l
+                    np.place(OFM_repre['FM_min'][l], OFM_repre_min_l_mask, OFM_k_l)
+                    np.place(OFM_repre['FM_max'][l], OFM_repre_max_l_mask, OFM_k_l)
             
             # OFM을 모두 순회한 후 OFMP_k의 기억공간을 램에서 제거
             del OFMP_k
 
         # * 훈련, 정분류 테스트, 오분류 테스트 데이터에 대한 FM_repre을 구함
-        set_FM_repre(train); set_FM_repre(rtest); set_FM_repre(wtest)
+        set_FM_repre(train); set_FM_repre(rvalid); set_FM_repre(wvalid)
+
+    def set_alpha_min_max(self):
+        # * 새로운 데이터 입력을 받기 전에 0으로 초기화
+        self.alpha_min['FM_min'] = []; self.alpha_max['FM_min'] = []
+        self.alpha_min['FM_mean'] = []; self.alpha_max['FM_mean'] = []
+        self.alpha_min['FM_max'] = []; self.alpha_max['FM_max'] = []
+
+        # * alpha_min, alpha_max 구하기
+        for l in range(self.L):
+            self.alpha_min['FM_min'].append(np.array([self.RFM_repre['FM_min'][l].min(),
+                                                      self.TFM_repre['FM_min'][l].min(),
+                                                      self.WFM_repre['FM_min'][l].min()]).min())
+            self.alpha_max['FM_min'].append(np.array([self.RFM_repre['FM_min'][l].max(),
+                                                      self.TFM_repre['FM_min'][l].max(),
+                                                      self.WFM_repre['FM_min'][l].max()]).max())
+
+            self.alpha_min['FM_mean'].append(np.array([self.RFM_repre['FM_mean'][l].min(),
+                                                       self.TFM_repre['FM_mean'][l].min(),
+                                                       self.WFM_repre['FM_mean'][l].min()]).min())
+            self.alpha_max['FM_mean'].append(np.array([self.RFM_repre['FM_mean'][l].max(),
+                                                       self.TFM_repre['FM_mean'][l].max(),
+                                                       self.WFM_repre['FM_mean'][l].max()]).max())
+
+            self.alpha_min['FM_max'].append(np.array([self.RFM_repre['FM_max'][l].min(),
+                                                      self.TFM_repre['FM_max'][l].min(),
+                                                      self.WFM_repre['FM_max'][l].min()]).min())
+            self.alpha_max['FM_max'].append(np.array([self.RFM_repre['FM_max'][l].max(),
+                                                      self.TFM_repre['FM_max'][l].max(),
+                                                      self.WFM_repre['FM_max'][l].max()]).max())
+
+    def set_MHP(self, FM_repre_MHP=[], alpha_MHP=[], DAM_MHP=[], W_MHP=[], lfmd_MHP=[], fmdc_MHP=[]):
+        # * 램 용량을 초과하지 않도록 나중에 이 부분을 추가함.
+        limited_number = 1219 # instance 하나 당 820KB일 때, limited_number: instance들의 총량이 1GB가 되는 개수.
+        number_of_all_case = len(FM_repre_MHP) * len(alpha_MHP) * len(DAM_MHP) * len(W_MHP) * len(lfmd_MHP) * len(fmdc_MHP)
+        if number_of_all_case > limited_number:
+            print(f'하이퍼 파라미터 경우의 수가 {limited_number}을 넘김')
+            return
+        elif number_of_all_case <= 0:
+            print(f'하이퍼 파라미터 경우의 수가 0이하임')
+            return
+
+        # * MHP 초기화
+        self.FM_repre_MHP = FM_repre_MHP; self.alpha_MHP = alpha_MHP; self.DAM_MHP = DAM_MHP
+        self.W_MHP = W_MHP; self.lfmd_MHP = lfmd_MHP; self.fmdc_MHP = fmdc_MHP  
+
+    def init_INSTs(self):
+        alpha_MHP_str = []
+        for i in range(len(self.alpha_MHP)):
+            # 'rmw_max'인 경우 
+            if self.alpha_MHP[i][0] == "rmw_max":
+                alpha_MHP_str.append(str(i)+','+self.alpha_MHP[i][0]+','+str(self.alpha_MHP[i][1]))
+            else:
+                alpha_MHP_i_str = ''
+                for ele_index, alpha_MHP_i_ele in enumerate(self.alpha_MHP[i]):
+                    if ele_index == len(self.alpha_MHP[i]) - 1:
+                        alpha_MHP_i_str += f"{alpha_MHP_i_ele: 0.4f}".strip()
+                    else:
+                        alpha_MHP_i_str += f"{alpha_MHP_i_ele: 0.4f}".strip() + str(',')
+
+                alpha_MHP_str.append(str(i)+','+alpha_MHP_i_str)
+
+        self.INST_names = list(itertools.product(self.FM_repre_MHP, alpha_MHP_str, self.DAM_MHP, self.lfmd_MHP, self.W_MHP, self.fmdc_MHP))
+
+        # * INST마다 하이퍼 파라미터를 초기화하고
+        # * 나머지는 빈 배열, 빈 딕셔너리, 초기값으로 초기화함.
+        for FM_repre_HP, alpha_HP_str, DAM_HP, lfmd_HP, W_HP, fmdc_HP in self.INST_names:
+            INST_name = FM_repre_HP+' '+alpha_HP_str+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+str(fmdc_HP)
+
+            # * INST를 딕셔너리로 초기화
+            self.INSTs[INST_name] = {}
+
+            # * FM_repre_infos
+            self.INSTs[INST_name]['FM_repre_select']=FM_repre_HP
+            ''' FM_repres
+            TFM_repre: 훈련 대표 피처 맵(베이스 피처 맵)
+            RFM_repre: 정분류 대표 피처 맵
+            WFM_repre: 오분류 대표 피처 맵
+            '''
+            # * alpha_infos
+            self.INSTs[INST_name]['alpha_slice']=0
+            self.INSTs[INST_name]['alpha']=[]
+            self.INSTs[INST_name]['rmw']=[]
+
+            alpha_HP_str_splited = alpha_HP_str.split(',')
+            # * [rmw_max]: alpha_slice, alpha 초기화
+            # alpha_HP가 rmw_max 방식이면 alpha_slice에 양수를 할당하고
+            # alpha에 L 크기 만큼 -1로 초기화한다.
+            if alpha_HP_str_splited[1] == 'rmw_max':
+                alpha_MHP_index = int(alpha_HP_str_splited[0])
+                self.INSTs[INST_name]['alpha_slice']=self.alpha_MHP[alpha_MHP_index][1]
+                for l in range(self.L):
+                    self.INSTs[INST_name]['alpha'].append(-1)
+            # * [특정 alpha 값들을 선택하는 방식]: alpha 초기화
+            # alpha_HP가 특정 alpha 값들을 선택하는 방식이면 alpha_slice에 아무것도 할당하지 않는다.(0을 유지한다.)
+            # 대신 alpha_HP의 특정 값들을 alpha에 할당한다.
+            else:
+                alpha_MHP_index = int(alpha_HP_str_splited[0])
+                self.INSTs[INST_name]['alpha'] = self.alpha_MHP[alpha_MHP_index]
+
+            ''' alpha_infos
+            alpha_slice: alpha_min에서 alpha_max로 몇 번의의 간격으로 도착할지 알려주는 변수임.
+            alpha: 거리 계산을 위한 인덱스를 고르기 위해 필요한 변수이다.
+            rmw: 훈련과 정분류이 비슷하고 훈련과 오분류가 비슷하지 않을수록 값이 커진다.
+            '''
+            # * AMs
+            self.INSTs[INST_name]['TAM']=[]; self.INSTs[INST_name]['RAM']=[]; self.INSTs[INST_name]['WAM']=[]
+            ''' AMs
+            TAM: 훈련 활성화 피처 맵
+            RAM: 정분류 활성화 피처 맵
+            WAM: 오분류 활성화 피처 맵
+            '''
+            # * DAM_infos
+            self.INSTs[INST_name]['DAM_indexes']=[]; self.INSTs[INST_name]['DAM']=[]; self.INSTs[INST_name]['DAM_select']=DAM_HP
+            self.INSTs[INST_name]['DAM_error_flag']=[]
+            ''' DAM_infos
+            DAM_indexes: 나중에 거리 계산할 때 쓰이는 다차원 인덱스들의 집합이다. 각 원소는 피처 맵의 한 원소의 인덱스를 나타낸다.
+            각 레이어마다 튜플들 세트가 있어야 함. np.array의 item 메소드를 사용할 것이기 때문
+            DAM: 거리 활성화 맵, DAM는 거리 계산을 위한 인덱스만 활성된 맵이다.
+            DAM_select: DAM를 고르는 방법을 알려줌.
+            DAM_error_flag: 예외 처리된 경우. 0은 예외 처리되지 않음. 1은 예외 처리되어 WFM 방식을 택함. 2는 예외 처리되어 모든 인덱스를 택함.
+            '''
+            # * layer_infos
+            self.INSTs[INST_name]['W']=[]
+            if W_HP == 'C':
+                for l in range(self.L):
+                    self.INSTs[INST_name]['W'].append(1/self.L)
+            elif W_HP == 'I':
+                for l in range(self.L):
+                    self.INSTs[INST_name]['W'].append((l+1)*(2/(self.L*(self.L+1))))
+            self.INSTs[INST_name]['lfmd_select']=lfmd_HP
+            ''' layer_infos
+            W: 각 레이어의 피처 맵에 곱할 weight 중요도이다
+            lfmd_select: 각 레이어에 대한 피처 맵을 구하는 방법을 저장한다.
+            '''
+            # * fmdc_infos
+            self.INSTs[INST_name]['fmdc']=-1; self.INSTs[INST_name]['fmdc_select']=fmdc_HP; self.INSTs[INST_name]['rfmds']=[]; self.INSTs[INST_name]['wfmds']=[]
+            ''' fmdc infos
+            fmdc: 피처 맵 거리 기준으로 어떤 데이터가 나중에 오분류 될 거 같은지 판단함.
+            rfmds: 정분류 피처 맵 거리들을 모아둔 것
+            wfmds: 오분류 피처 맵 거리들을 모아둔 것
+            '''
+            # * eval_infos
+            self.INSTs[INST_name]['is_eval_FMD']={}; self.INSTs[INST_name]['fmds']={}
+            self.INSTs[INST_name]['TP']={}; self.INSTs[INST_name]['FN']={}; self.INSTs[INST_name]['TN']={}; self.INSTs[INST_name]['FP']={}
+            self.INSTs[INST_name]['P']={}; self.INSTs[INST_name]['N']={}
+            self.INSTs[INST_name]['TPR']={}; self.INSTs[INST_name]['TNR']={}; self.INSTs[INST_name]['PPV']={}; self.INSTs[INST_name]['NPV']={}
+            self.INSTs[INST_name]['FNR']={}; self.INSTs[INST_name]['FPR']={}; self.INSTs[INST_name]['FDR']={}; self.INSTs[INST_name]['FOR']={}
+            for eval_name in self.eval_names:
+                self.INSTs[INST_name]['is_eval_FMD'][eval_name]=[]; self.INSTs[INST_name]['fmds'][eval_name]=[]
+                self.INSTs[INST_name]['TP'][eval_name]=-1; self.INSTs[INST_name]['FN'][eval_name]=-1; self.INSTs[INST_name]['TN'][eval_name]=-1; self.INSTs[INST_name]['FP'][eval_name]=-1
+                self.INSTs[INST_name]['P'][eval_name]=-1; self.INSTs[INST_name]['N'][eval_name]=-1
+                self.INSTs[INST_name]['TPR'][eval_name]=-1; self.INSTs[INST_name]['TNR'][eval_name]=-1; self.INSTs[INST_name]['PPV'][eval_name]=-1; self.INSTs[INST_name]['NPV'][eval_name]=-1
+                self.INSTs[INST_name]['FNR'][eval_name]=-1; self.INSTs[INST_name]['FPR'][eval_name]=-1; self.INSTs[INST_name]['FDR'][eval_name]=-1; self.INSTs[INST_name]['FOR'][eval_name]=-1
+            ''' eval_infos
+            eval_U: 데이터의 정분류(True), 오분류(False) 유무를 True, False로 담는다
+            is_eval_FMD는:데이터가 is_eval_FMD이면 True, eval_fmd가 아니면 False를 담는다.
+            fmds: 데이터들의 fmd를 담는다.
+            TP, FN, TN, FP는 confusion matrix를 표현하기 위한 가장 기본적인 속성이다.
+            TPR, TNR, PPV, NPV, FNR, FPR, FDR, FOR도 있다.
+            '''
 
     def set_AMs_and_related(self):
-        # * 새로운 데이터를 받을 수 있게끔 속성을 초기 상태로 만듦.
-        self.TAM = []; self.RAM = []; self.WAM = []; self.DAM = []
-        self.alpha_slice = []; self.DAM_select = []; self.DAM_indexes = []
+        for FM_repre_HP, alpha_HP_str, DAM_HP, lfmd_HP, W_HP, fmdc_HP in self.INST_names:
+            INST_name = FM_repre_HP+' '+alpha_HP_str+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+str(fmdc_HP)
 
-        # alpha, r_minus_w_max를 0으로 초기화
-        self.alpha = np.zeros(self.L)
-        self.r_minus_w_max = np.zeros(self.L)
+           # * alpha_infos, AM_infos, DAM_info을 초기값으로 초기화
+            # alpha_infos
+            self.INSTs[INST_name]['rmw']=[]
+            # AM_infos
+            self.INSTs[INST_name]['TAM']=[]; self.INSTs[INST_name]['RAM']=[]; self.INSTs[INST_name]['WAM']=[]
+            # DAM_infos
+            self.INSTs[INST_name]['DAM_indexes']=[]; self.INSTs[INST_name]['DAM']=[]
+            self.INSTs[INST_name]['DAM_error_flag']=[]
 
-        # [hyperparameter] alpha_slice를 일단 1000으로 함
-        for l in range(self.L):
-            self.alpha_slice.append(100)
+            # * 1. rmw에 L 크기 만큼 -987654321로 초기화한다.
+            for l in range(self.L):
+                self.INSTs[INST_name]['rmw'].append(-987654321)
+            # * 2. AMs 0으로 초기화
+            for l in range(self.L):
+                TAM_l = np.zeros(self.shape[l])
+                self.INSTs[INST_name]['TAM'].append(TAM_l)
+            for l in range(self.L):
+                RAM_l = np.zeros(self.shape[l])
+                self.INSTs[INST_name]['RAM'].append(RAM_l)
+            for l in range(self.L):
+                WAM_l = np.zeros(self.shape[l])
+                self.INSTs[INST_name]['WAM'].append(WAM_l)
+            # * 3. DAM_error_flag를 0으로 초기화
+            for l in range(self.L):
+                self.INSTs[INST_name]['DAM_error_flag'].append(0)
 
-        # alpha의 최소값과 최대값을 구함
-        self.alpha_min = np.zeros(self.L)
-        self.alpha_max = np.zeros(self.L)
-        for l in range(self.L):
-            self.alpha_min[l] = np.array([self.RFM_repre[l].min(),
-                                         self.TFM_repre[l].min(),
-                                         self.WFM_repre[l].min()]).min()
-            self.alpha_max[l] = np.array([self.RFM_repre[l].max(),
-                                         self.TFM_repre[l].max(),
-                                         self.WFM_repre[l].max()]).max()
+            alpha_HP_str_splited = alpha_HP_str.split(',')
+            FM_repre_select = self.INSTs[INST_name]['FM_repre_select']
+            # * 1. rmw_max 방식일 경우
+            if alpha_HP_str_splited[1] == 'rmw_max':
+                # rmw_max 방식일 경우 alpha_slice를 사용함.
+                alpha_slice = self.INSTs[INST_name]['alpha_slice']
+                # r-w가 최대가 되는 alpha, TAM, RAM, WAM을 찾음
+                for l in range(self.L):
+                    alpha_min_l = self.alpha_min[FM_repre_select][l]; alpha_max_l = self.alpha_max[FM_repre_select][l]
+                    alpha_interval_l = (alpha_max_l - alpha_min_l)/alpha_slice
+                    # range(a_slice_l+1) 해야 a_min_l 부터 a_max_l 까지 감
+                    for alpha_offset, alpha_l in enumerate([alpha_min_l + alpha_interval_l*alpha_offset for alpha_offset in range(alpha_slice+1)]):
+                        TAM_l = np.array(self.TFM_repre[FM_repre_select][l] > alpha_l)
+                        RAM_l = np.array(self.RFM_repre[FM_repre_select][l] > alpha_l)
+                        WAM_l = np.array(self.WFM_repre[FM_repre_select][l] > alpha_l)
+                        
+                        TAM_l_xnor_RAM_l = np.logical_not(np.logical_xor(TAM_l, RAM_l))
+                        TAM_l_xnor_WAM_l = np.logical_not(np.logical_xor(TAM_l, WAM_l))
+                        # r_l은 TAM_l과 RAM_l이 얼마나 유사한지 보여준다.
+                        # 즉, TAM_l과 RAM_l이 유사할수록 r_l 값이 커진다.
+                        # w_l도 마찬가지이다.
+                        r_l = len(np.where(TAM_l_xnor_RAM_l == True)[0])
+                        w_l = len(np.where(TAM_l_xnor_WAM_l == True)[0])
+                        # * 처음에는 alpha_offset 0으로 초기화하고
+                        if alpha_offset == 0:
+                            self.INSTs[INST_name]['alpha'][l] = alpha_l
+                            self.INSTs[INST_name]['rmw'][l] = r_l - w_l
+                            self.INSTs[INST_name]['TAM'][l] = TAM_l
+                            self.INSTs[INST_name]['RAM'][l] = RAM_l
+                            self.INSTs[INST_name]['WAM'][l] = WAM_l
+                        # * r-w가 이전의 r-w보다 클 때, 즉, TAM과 RAM이 더 유사해지거나 TAM과 WAM이 더 다를 때
+                        # * alpha, r-w, TAM, RAM, WAM를 최신화함.
+                        elif alpha_offset > 0 and r_l - w_l > self.INSTs[INST_name]['rmw'][l]:
+                            self.INSTs[INST_name]['alpha'][l] = alpha_l
+                            self.INSTs[INST_name]['rmw'][l] = r_l - w_l
+                            self.INSTs[INST_name]['TAM'][l] = TAM_l
+                            self.INSTs[INST_name]['RAM'][l] = RAM_l
+                            self.INSTs[INST_name]['WAM'][l] = WAM_l
+            # * 2. 특정 alpha 값들을 선택하는 방식일 경우
+            else:
+                # 특정 alpha 값들을 선택하는 방식일 경우 alpha를 바로 사용함.
+                alpha = self.INSTs[INST_name]['alpha']
+                # * OAM 및 rmw 구하기
+                for l in range(self.L):
 
-        # TAM, RAM, WAM을 0으로 초기화 함
-        for l in range(self.L):
-            TAM_l = np.zeros(self.shape[l])
-            self.TAM.append(TAM_l)
-        for l in range(self.L):
-            RAM_l = np.zeros(self.shape[l])
-            self.RAM.append(RAM_l)
-        for l in range(self.L):
-            WAM_l = np.zeros(self.shape[l])
-            self.WAM.append(WAM_l)
-
-        # r-w가 최대가 되는 alpha, TAM, RAM, WAM을 찾음
-        for l in range(self.L):
-            # range 부분 고칠 필요가 있음
-            a_min_l = self.alpha_min[l]; a_max_l = self.alpha_max[l]
-            a_slice_l = self.alpha_slice[l]
-            interval_l = (a_max_l - a_min_l)/a_slice_l
-            # range(a_slice_l+1) 해야 a_min_l 부터 a_max_l 까지 감
-            for alpha_l in [a_min_l + interval_l*s for s in range(a_slice_l+1)]:
-                TAM_l = np.array(self.TFM_repre[l] > alpha_l)
-                RAM_l = np.array(self.RFM_repre[l] > alpha_l)
-                WAM_l = np.array(self.WFM_repre[l] > alpha_l)
+                    self.INSTs[INST_name]['TAM'][l] = np.array(self.TFM_repre[FM_repre_select][l] > alpha[l])
+                    self.INSTs[INST_name]['RAM'][l] = np.array(self.RFM_repre[FM_repre_select][l] > alpha[l])
+                    self.INSTs[INST_name]['WAM'][l] = np.array(self.WFM_repre[FM_repre_select][l] > alpha[l])
+                    
+                    TAM_l_xnor_RAM_l = np.logical_not(np.logical_xor(self.INSTs[INST_name]['TAM'][l], self.INSTs[INST_name]['RAM'][l]))
+                    TAM_l_xnor_WAM_l = np.logical_not(np.logical_xor(self.INSTs[INST_name]['TAM'][l], self.INSTs[INST_name]['WAM'][l]))
                 
-                TAM_l_xnor_RAM_l = np.logical_not(np.logical_xor(TAM_l, RAM_l))
-                TAM_l_xnor_WAM_l = np.logical_not(np.logical_xor(TAM_l, WAM_l))
-                # r_l은 TAM_l과 RAM_l이 얼마나 유사한지 보여준다.
-                # 즉, TAM_l과 RAM_l이 유사할수록 r_l 값이 커진다.
-                # w_l도 마찬가지이다.
-                r_l = len(np.where(TAM_l_xnor_RAM_l == True)[0])
-                w_l = len(np.where(TAM_l_xnor_WAM_l == True)[0])
-                
-                if r_l - w_l > self.r_minus_w_max[l]:
-                    # r-w가 이전의 r-w보다 클 때
-                    # 즉, TAM과 RAM이 더 유사해지거나 TAM과 WAM이 더 다를 때
-                    # alpha, w-r, TAM, RAM, WAM를 최신화함.
-                    self.r_minus_w_max[l] = r_l - w_l
-                    self.alpha[l] = alpha_l
-                    self.TAM[l] = TAM_l
-                    self.RAM[l] = RAM_l
-                    self.WAM[l] = WAM_l
+                    r_l = len(np.where(TAM_l_xnor_RAM_l == True)[0])
+                    w_l = len(np.where(TAM_l_xnor_WAM_l == True)[0])
 
-        # TAM, RAM, WAM를 이용하여 DAM를 구함
-        # DAM에 WAM를 deep copy 복사함
-        for l in range(self.L):
-            DAM_l = self.WAM[l].copy()
-            self.DAM.append(DAM_l)
+                    # 기존의 rmw에 r-w 더하기
+                    self.INSTs[INST_name]['rmw'][l] = (r_l - w_l)
 
-        # [hyperparameter] 일단 모든 레이어를 'and' 방식으로 함
-        for l in range(self.L):
-            self.DAM_select.append("and")
+            # * 1. DAM_select 방식으로 DAM_infos 구하기
+            TAM = self.INSTs[INST_name]['TAM']; RAM = self.INSTs[INST_name]['RAM']; WAM = self.INSTs[INST_name]['WAM']
+            DAM_select = self.INSTs[INST_name]['DAM_select']
+            # DAM를 WAM로 초기화
+            self.INSTs[INST_name]['DAM'] = copy.deepcopy(WAM)
+            # DAM 구하기
+            if DAM_select == "and":
+                for l in range(self.L):
+                    TAM_l_and_RAM_l = np.logical_and(TAM[l], RAM[l])
+                    np.place(self.INSTs[INST_name]['DAM'][l], TAM_l_and_RAM_l, False)
+            elif DAM_select == "or":
+                for l in range(self.L):
+                    TAM_l_or_RAM_l = np.logical_or(TAM[l], RAM[l])
+                    np.place(self.INSTs[INST_name]['DAM'][l], TAM_l_or_RAM_l, False)
+            elif DAM_select == "wfm":
+                pass
+            elif DAM_select == "all":
+                for l in range(self.L):
+                    not_DAM_l = np.logical_not(self.INSTs[INST_name]['DAM'][l])
+                    np.place(self.INSTs[INST_name]['DAM'][l], not_DAM_l, True)
+            # * 2. 만약 DAM[l]의 원소가 모두 False라면 WAM[l]로 초기화함.
+            for l in range(self.L):
+                shape_l_size = 1
+                for shaple_l_i in self.shape[l]:
+                    shape_l_size *= shaple_l_i
+                if len(np.where(self.INSTs[INST_name]['DAM'][l] == False)[0]) == shape_l_size:
+                    self.INSTs[INST_name]['DAM_error_flag'][l] += 1 # error_flag 1 증가
+                    DAM_l = WAM[l].copy()
+                    self.INSTs[INST_name]['DAM'][l] = DAM_l
+            # * 3. 그래도 DAM[l]의 원소가 모두 False라면 모든 인덱스를 True로 초기화함.
+            for l in range(self.L):
+                shape_l_size = 1
+                for shaple_l_i in self.shape[l]:
+                    shape_l_size *= shaple_l_i
+                if len(np.where(self.INSTs[INST_name]['DAM'][l] == False)[0]) == shape_l_size:
+                    self.INSTs[INST_name]['DAM_error_flag'][l] += 1
+                    DAM_l = np.ones(self.shape[l], dtype='bool')
+                    self.INSTs[INST_name]['DAM'][l] = DAM_l
 
-        # 선택하려는 방식('and', 'or', 등등)대로 DAM를 고름
-        for l in range(self.L):
-            # 'and' 방식보다 'or' 방식에서 대부분의 인덱스에서 오분류 데이터의 값이 상대적으로 더 커짐
-            # 다만 'or' 방식은 'and' 방식보다 거리 계산을 위한 인덱스의 개수가 더 줄어듦
-            # 'all' 방식은 모든 인덱스를 다 사용함.
-            if self.DAM_select[l] == "and":
-                TAM_l_and_RAM_l = np.logical_and(self.TAM[l], self.RAM[l])
-                # WAM에서 (TAM 교집합 RAM)과 곂치는 부분을 False로 만듦
-                np.place(self.DAM[l], TAM_l_and_RAM_l, False)
-            elif self.DAM_select[l] == "or":
-                TAM_l_or_RAM_l = np.logical_or(self.TAM[l], self.RAM[l])
-                # WAM에서 (TAM 합집합 RAM)과 곂치는 부분을 False로 만듦)
-                np.place(self.DAM[l], TAM_l_or_RAM_l, False)
-            elif self.DAM_select[l] == "all":
-                not_DAM_l = np.logical_not(self.DAM[l])
-                # 모든 인덱스를 다 사용함
-                np.place(self.DAM[l], not_DAM_l, True)
+            # * DAM_indexes를 지정함
+            for l in range(self.L):
+                nonzero_DAM_l = np.nonzero(self.INSTs[INST_name]['DAM'][l])
+                DAM_indexes_l = np.empty((1,len(nonzero_DAM_l[0])), dtype="int32")
+                # l 레이어 차원의 수 만큼 각 차원에 대한 인덱스들을 DAM_indexes_l에 삽입
+                for i in range(len(nonzero_DAM_l)):
+                    DAM_indexes_l = np.append(DAM_indexes_l, nonzero_DAM_l[i].reshape(1,-1), axis=0)
+                # 처음 배열은 np.empty 메소드로 만들어진 쓰레기 값이라 버림
+                # 가로 방향이라 세로 방향으로 길게 늘어지도록 바꿈
+                DAM_indexes_l = list(DAM_indexes_l[1:].T)
+                # DAM_indexes_l 각 원소가 리스트 형태인데 그것을 튜플로 바꿈
+                # 튜플로 만드는 이유는 np.item() 메소드가 튜플을 인자로 받기 때문
+                for i in range(len(DAM_indexes_l)):
+                    DAM_indexes_l[i] = tuple(DAM_indexes_l[i])
 
-        # * 만약 DAM[l]의 원소가 모두 False라면 WAM[l]로 초기화함.
-        for l in range(self.L):
-            shape_l_size = 1
-            for shaple_l_i in self.shape[l]:
-                shape_l_size *= shaple_l_i
-
-            if len(np.where(self.DAM[l] == False)[0]) == shape_l_size:
-                DAM_l = self.WAM[l].copy()
-                self.DAM[l] = DAM_l
-
-        # DAM_indexes를 지정함
-        for l in range(self.L):
-            nonzero_DAM_l = np.nonzero(self.DAM[l])
-            DAM_indexes_l = np.empty((1,len(nonzero_DAM_l[0])), dtype="int32")
-            # l 레이어 차원의 수 만큼 각 차원에 대한 인덱스들을 DAM_indexes_l에 삽입
-            for i in range(len(nonzero_DAM_l)):
-                DAM_indexes_l = np.append(DAM_indexes_l, nonzero_DAM_l[i].reshape(1,-1), axis=0)
-            # 처음 배열은 np.empty 메소드로 만들어진 쓰레기 값이라 버림
-            # 가로 방향이라 세로 방향으로 길게 늘어지도록 바꿈
-            DAM_indexes_l = list(DAM_indexes_l[1:].T)
-            # DAM_indexes_l 각 원소가 리스트 형태인데 그것을 튜플로 바꿈
-            # 튜플로 만드는 이유는 np.item() 메소드가 튜플을 인자로 받기 때문
-            for i in range(len(DAM_indexes_l)):
-                DAM_indexes_l[i] = tuple(DAM_indexes_l[i])
-
-            self.DAM_indexes.append(DAM_indexes_l)
+                self.INSTs[INST_name]['DAM_indexes'].append(DAM_indexes_l)
     
-    def se_lfmd(self, FM_k_l, l, percent=50, sensitive=1):
+    def se_lfmd(self, INST_name, FM_k_l, l, percent=50, sensitive=3):
         '''
         se_lfmd: shift exponential layer feature map distance
         일단 디폴트로 length_min length_max의 50(정중앙 값)에 해당하는 부분을 origin(원점)으로 이동
         그리고 민감도는 디폴트로 1로 설정함
         '''
         se_lfmd = 0
-        
+        # 가독성을 위해 간단한 변수명으로 초기화
         norm_min = self.norm_min; norm_max = self.norm_max
+        FM_repre_select = self.INSTs[INST_name]['FM_repre_select']
         # self.TFM_repre[l], FM_k_l를 self.norm_min, self.norm_max으로 정규화
-        TFM_repre_l_norm = self.normalize_layer(self.TFM_repre[l], norm_min, norm_max)
+        TFM_repre_l_norm = self.normalize_layer(self.TFM_repre[FM_repre_select][l], norm_min, norm_max)
         FM_k_l_norm = self.normalize_layer(FM_k_l, norm_min, norm_max)
 
         # lengths: 인덱스 마다 TFM_repre_norm과 FM_k_l_norm 사이의 거리(절대값)를 구함
@@ -415,7 +560,7 @@ class FMD():
 
         exp_lengths_minus_shift_value = np.zeros(self.shape[l])
         # 각 원소를 shift value 만큼 이동시키고 'exponential'을 취함
-        for index in self.DAM_indexes[l]:
+        for index in self.INSTs[INST_name]['DAM_indexes'][l]:
             exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive)
         # se를 취한 값들을 모두 더한 것이 se_lfmd임
         se_lfmd = exp_lengths_minus_shift_value.sum()
@@ -449,22 +594,23 @@ class FMD():
 
         return normalized_layer
     
-    def Ln_lfmd(self, FM_k_l, l, n=1):
+    def Ln_lfmd(self, INST_name, FM_k_l, l, n=1):
         '''
         Ln_lfmd: Ln layer feature map distance
         레이어의 인덱스들 간의 절대값을 모두 더한다.
         '''
         Ln_lfmd = 0
-        
+        # 가독성을 위해 간단한 변수명으로 초기화
         norm_min = self.norm_min; norm_max = self.norm_max
+        FM_repre_select = self.INSTs[INST_name]['FM_repre_select']
         # self.TFM_repre[l], FM_k_l를 self.norm_min, self.norm_max으로 정규화
-        TFM_repre_l_norm = self.normalize_layer(self.TFM_repre[l], norm_min, norm_max)
+        TFM_repre_l_norm = self.normalize_layer(self.TFM_repre[FM_repre_select][l], norm_min, norm_max)
         FM_k_l_norm = self.normalize_layer(FM_k_l, norm_min, norm_max)
 
         # lengths: 인덱스 마다 TFM_repre_norm과 FM_k_l_norm 사이의 거리(절대값)를 구함
         lengths = abs(TFM_repre_l_norm - FM_k_l_norm)
         # DAM에서 True인 부분만 가지고 옴.
-        lengths = lengths[self.DAM[l]]
+        lengths = lengths[self.INSTs[INST_name]['DAM'][l]]
         # lengths의 각 원소에 지수 n을 취함
         lengths_pow_n = np.power(lengths, n)
         # lengths_pow_n을 모두 더한 후 1/n 지수를 취하면 Ln_lfmd임
@@ -478,7 +624,7 @@ class FMD():
         elif lfmd_select == "Ln_lfmd":
             return self.Ln_lfmd
 
-    def fmd(self, FM_k):
+    def fmd(self, INST_name, FM_k):
         # 피처 맵 거리를 0으로 초기화
         fmd=0
         # lfmds: 레이어 피처 맵 거리를 담는 곳
@@ -486,32 +632,25 @@ class FMD():
         # 각 레이어에 대한 레이어 피처 맵 거리 계산법으로 레이어 피처 맵 계산
         for l in range(self.L):
             FM_k_l = FM_k[l]
-            lfmd_l = self.lfmd(self.lfmd_select[l])(FM_k_l, l)
+            lfmd_l = self.lfmd(self.INSTs[INST_name]['lfmd_select'])(INST_name, FM_k_l, l)
             lfmds.append(lfmd_l)
         # 레이어 피처 맵마다 weight를 줌
         for l in range(self.L):
-            fmd += self.W[l]*lfmds[l]
+            fmd += self.INSTs[INST_name]['W'][l]*lfmds[l]
 
         return fmd
     
     def set_fmds(self):
-        # self.rfmds, self.wfmds는 정분류 테스트 데이터, 오분류 테스트 데이터에 대한 fmd를 저장함
-        # * 새로운 데이터를 받기 전에 빈 배열로 초기화 함.
-        self.rfmds=[]
-        self.wfmds=[]
-
-        rtest = self.origin_names[1]; wtest = self.origin_names[2]
-
-        def set_fmds(test_name):
+        def set_fmds(INST_name, valid_name):
             # RFM와 WFM을 부르기 위한 변수들을 선언함
-            if test_name=="rtest":
-                test=self.origin_names[1]; test_dir=self.rtest_dir; test_K=self.origin_K[test]
-                FMP_k=None; prev_FMPI_k=None; cur_FMPI_k=None; fmds = self.rfmds
-            elif test_name=="wtest":
-                test=self.origin_names[2]; test_dir=self.wtest_dir; test_K=self.origin_K[test]
-                FMP_k=None; prev_FMPI_k=None; cur_FMPI_k=None; fmds = self.wfmds
+            if valid_name=="rvalid":
+                valid=self.origin_names[1]; valid_dir=self.rvalid_dir; valid_K=self.origin_K[valid]
+                FMP_k=None; prev_FMPI_k=None; cur_FMPI_k=None; fmds=self.INSTs[INST_name]['rfmds']
+            elif valid_name=="wvalid":
+                valid=self.origin_names[2]; valid_dir=self.wvalid_dir; valid_K=self.origin_K[valid]
+                FMP_k=None; prev_FMPI_k=None; cur_FMPI_k=None; fmds=self.INSTs[INST_name]['wfmds']
 
-            for k in range(test_K):
+            for k in range(valid_K):
                 # k번 째 데이터의 FMPI, FMPO 구함
                 cur_FMPI_k = k // self.FMP_count
                 FMPO_k = k % self.FMP_count
@@ -521,36 +660,65 @@ class FMD():
                     pass
                 else:
                     del FMP_k
-                    with open(f'{test_dir}/{test}_{cur_FMPI_k}.pickle', 'rb') as f:
+                    with open(f'{valid_dir}/{valid}_{cur_FMPI_k}.pickle', 'rb') as f:
                         FMP_k = pickle.load(f)
 
                 prev_FMPI_k = cur_FMPI_k
 
                 FM_k = FMP_k[FMPO_k]
 
-                fmds.append(self.fmd(FM_k))
+                fmds.append(self.fmd(INST_name, FM_k))
 
-            # test를 모두 순회하고 난 후 FMP_k의 기억공간을 램에서 제거
+            # valid를 모두 순회하고 난 후 FMP_k의 기억공간을 램에서 제거
             del FMP_k
-        
-        set_fmds(rtest); self.rfmds = np.array(self.rfmds)
-        set_fmds(wtest); self.wfmds = np.array(self.wfmds)
 
-    def set_fmdc(self):        
-        # self.fmdc = wfmds.mean() # !
-        # self.fmdc = wfmds[len(wfmds) // 2] # !
-        # self.fmdc = wfmds[(len(wfmds) // 3) * 2] # !
-        # self.fmdc = wfmds.max() # !
-        # self.fmdc = (rfmds.max() + wfmds.min()) / 2 # !
-        # print(f'rfmds.max(): {rfmds.max()}, wfmds.min(): {wfmds.min()}') # !
-        # self.fmdc = rfmds.max() # !
-        self.fmdc = self.wfmds.min()
+        for FM_repre_HP, alpha_HP_str, DAM_HP, lfmd_HP, W_HP, fmdc_HP in self.INST_names:
+            # * INST_name 정하기
+            INST_name = FM_repre_HP+' '+alpha_HP_str+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+str(fmdc_HP)
+            # * INST에 있는 rfmds, wfmds 빈 배열로 초기화
+            self.INSTs[INST_name]['rfmds']=[]; self.INSTs[INST_name]['wfmds']=[]
+            # * INST에 있는 rfmds, wfmds에 fmd로 초기화
+            rvalid = self.origin_names[1]; wvalid = self.origin_names[2]
+            set_fmds(INST_name, rvalid); self.INSTs[INST_name]['rfmds'] = np.array(self.INSTs[INST_name]['rfmds'])
+            set_fmds(INST_name, wvalid); self.INSTs[INST_name]['wfmds'] = np.array(self.INSTs[INST_name]['wfmds'])
+
+    def set_fmdc(self):
+        for FM_repre_HP, alpha_HP_str, DAM_HP, lfmd_HP, W_HP, fmdc_HP in self.INST_names:
+            # * INST_name 정하기
+            INST_name = FM_repre_HP+' '+alpha_HP_str+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+str(fmdc_HP)
+
+            # * 가독성을 위해 간단한 변수명을 사용함 
+            fmdc_select = self.INSTs[INST_name]['fmdc_select']
+            rfmds = self.INSTs[INST_name]['rfmds']
+            wfmds = self.INSTs[INST_name]['wfmds']
+
+            if fmdc_select == 'rM':
+                self.INSTs[INST_name]['fmdc'] = rfmds.max()
+            elif fmdc_select == 'rA':
+                self.INSTs[INST_name]['fmdc'] = rfmds.mean()
+            elif fmdc_select == 'wm':
+                self.INSTs[INST_name]['fmdc'] = wfmds.min()
+            elif fmdc_select == 'wA':
+                self.INSTs[INST_name]['fmdc'] = wfmds.mean()
+            elif fmdc_select == 'rMwmA':
+                self.INSTs[INST_name]['fmdc'] = (rfmds.max() + wfmds.min()) / 2
+
+    def fit(self, FM_repre_MHP, alpha_MHP, DAM_MHP, W_MHP, lfmd_MHP, fmdc_MHP):
+        self.set_data_infos()
+        self.set_FM_repres()
+        self.set_alpha_min_max()
+        self.set_MHP(FM_repre_MHP, alpha_MHP, DAM_MHP, W_MHP, lfmd_MHP, fmdc_MHP)
+        self.init_INSTs()
+        self.set_AMs_and_related()
+        self.set_fmds()
+        self.set_fmdc()
 
     def eval(self):
         # * 새로운 데이터를 받을 수 있게끔 속성을 초기 상태로 만듦.
         for eval_name in self.eval_names:
             self.is_eval_FMD[eval_name] = []; self.fmds[eval_name] = []
 
+        # * is_eval_FMD, fmds를 구함
         for eval_name in self.eval_names:
             # self.fmds[eval_name], self.is_eval_FMD[eval_name]는
             # self.set_data_infos_and_related()에서 []로 초기화됨
@@ -595,8 +763,7 @@ class FMD():
             
             self.is_eval_FMD[eval_name] = np.array(self.is_eval_FMD[eval_name])
             self.fmds[eval_name] = np.array(self.fmds[eval_name])
-    
-    def set_CM_infos(self):
+        
         # * confusion matrix를 표현하기 위한 가장 기초적인 원소들을 초기화
         for eval_name in self.eval_names:
             # * self.TP, self.FN, self.TN, self.FP을 초기화하기 위한 변수 초기화
@@ -633,23 +800,45 @@ class FMD():
             self.square_NPs_figsize = figsize
         if column!=None:
             self.square_NPs_column = column
-            
-    def show_all(self, layer_size=None, eval_size=None, column=None):
-        # 각 show 메소드를 출력 후 '-'을 200번 출력
-        if layer_size!=None:
-            self.set_square_NPs_infos(figsize=layer_size)
-        if eval_size!=None:
-            self.set_square_NPs_infos(figsize=eval_size)
-        if column!=None:
-            self.set_square_NPs_infos(column=column)
-        print('self.show_data_infos()'); self.show_data_infos(); print('-'*200)
-        print('self.show_FM_repres()'); self.show_FM_repres(); print('-'*200)
-        print('self.show_AMs_and_related()'); self.show_AMs_and_related(); print('-'*200)
-        print('self.show_hyper_parameter()'); self.show_hyper_parameter(); print('-'*200)
-        print('self.show_layer_infos()'); self.show_layer_infos(); print('-'*200)
-        print('self.show_fmdc()'); self.show_fmdc(); print('-'*200)
-        print('self.show_dirs()'); self.show_dirs(); print('-'*200)
-        print('self.show_eval_infos()'); self.show_eval_infos(); print('-'*200)
+
+    def show_all(self, show_all_mask):
+        if show_all_mask['show_dirs']:
+            print('self.show_dirs()'); self.show_dirs(); print('-'*200)
+
+        if show_all_mask['show_data_infos']:
+            print('self.show_data_infos()'); self.show_data_infos(); print('-'*200)
+
+        if show_all_mask['show_HP']:
+            print('self.show_HP()'); self.show_HP(); print('-'*200)
+
+        if show_all_mask['show_FM_repres']:
+            self.set_square_NPs_infos(figsize=[60,60], column=7)
+            print('self.show_FM_repres()'); self.show_FM_repres(); print('-'*200)
+
+        if show_all_mask['show_AMs_and_related']:
+            self.set_square_NPs_infos(figsize=[60,60], column=7)
+            print('self.show_AMs_and_related()'); self.show_AMs_and_related(); print('-'*200)
+
+        if show_all_mask['show_layer_infos']:
+            print('self.show_layer_infos()'); self.show_layer_infos(); print('-'*200)
+
+        if show_all_mask['show_fmds_box_plot']:
+            print('self.show_fmds_box_plot()'); self.show_fmds_box_plot(); print('-'*200)
+
+        if show_all_mask['show_fmdc']:
+            print('self.show_fmdc()'); self.show_fmdc(); print('-'*200)
+
+        if show_all_mask['show_eval_infos']:
+            print('self.show_eval_infos()'); self.show_eval_infos(); print('-'*200)
+
+        if show_all_mask['show_fmd_right_ratio_graph']:
+            print('self.show_fmd_right_ratio_graph()'); self.show_fmd_right_ratio_graph(); print('-'*200)
+
+        if show_all_mask['show_eval_venn_diagrams']:
+            print('self.show_eval_venn_diagrams()'); self.show_eval_venn_diagrams(); print('-'*200)
+
+        if show_all_mask['show_efficience_and_FMD_ratio']:
+            print('self.show_efficience_and_FMD_ratio()'); self.show_efficience_and_FMD_ratio(); print('-'*200)
         
     def show_data_infos(self):
         print("self.origin_names"); print(self.origin_names)
@@ -659,12 +848,21 @@ class FMD():
         print("self.L"); print(self.L)
         print("self.shape"); print(self.shape)
 
+    def show_HP(self):
+        print("self.alpha_slice"); print(self.alpha_slice)
+        print("self.DAM_types"); print(self.DAM_types)
+        print("self.W_types"); print(self.W_types)
+        print("self.lfmd_types"); print(self.lfmd_types)
+        print("self.fmdc_types"); print(self.fmdc_types)
+
     def show_FM_repres(self):
+        self.set_square_NPs_infos([60,60],column=7)
         print("self.TFM_repre"); self.show_square_NPs(self.TFM_repre.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
         print("self.RFM_repre"); self.show_square_NPs(self.RFM_repre.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
         print("self.WFM_repre"); self.show_square_NPs(self.WFM_repre.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
 
     def show_AMs_and_related(self):
+        self.set_square_NPs_infos([60,60],column=7)
         print("self.TAM"); self.show_square_NPs(self.TAM.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
         print("self.RAM"); self.show_square_NPs(self.RAM.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
         print("self.WAM"); self.show_square_NPs(self.WAM.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
@@ -673,18 +871,10 @@ class FMD():
         print("self.alpha_min"); print(self.alpha_min)
         print("self.alpha"); print(self.alpha)
         print("self.alpha_max"); print(self.alpha_max)
-        print("self.r_minus_w_max"); print(self.r_minus_w_max)
+        print("self.rmw"); print(self.rmw)
 
         print("self.DAM_select"); print(self.DAM_select)
-        # TODO self.DAM_indexes 요약적으로 표시하게 하기
-        # print("self.DAM_indexes"); print(self.DAM_indexes)
         print("self.DAM"); self.show_square_NPs(self.DAM.copy()) # 포인터가 아닌 복사본을 인자로 넘겨줌
-
-    def show_hyper_parameter(self):
-        print("self.alpha_slice"); print(self.alpha_slice)
-        print("self.DAM_select"); print(self.DAM_select)
-        print("self.lfmd_select"); print(self.lfmd_select)
-        print("self.W"); print(self.W)
 
     def show_layer_infos(self):
         print("self.lfmd_select"); print(self.lfmd_select)
@@ -693,9 +883,8 @@ class FMD():
         print("self.norm_max"); print(self.norm_max)
 
     def show_fmds_box_plot(self):
-        # TODO fmdc 정하는 기준 분석해보기
         plt.boxplot([self.rfmds, self.wfmds],notch=True)
-
+        plt.xticks([1, 2], ['rfmds', 'wfmds'])
         plt.show()
 
     def show_fmdc(self):
@@ -706,8 +895,8 @@ class FMD():
         
         print("self.origin_dir"); print(self.origin_dir)
         print("self.train_dir"); print(self.train_dir)
-        print("self.rtest_dir"); print(self.rtest_dir)
-        print("self.wtest_dir"); print(self.wtest_dir)
+        print("self.rvalid_dir"); print(self.rvalid_dir)
+        print("self.wvalid_dir"); print(self.wvalid_dir)
 
         print("self.eval_dir"); print(self.eval_dir)
     
@@ -781,6 +970,7 @@ class FMD():
         plt.colorbar()
 
     def show_eval_infos(self):
+        self.set_square_NPs_infos([20,10])
         for eval_name in self.eval_names:
             print(f'In eval/{eval_name}')
             # 배열에 넘파이 배열을 넣어서 show_square_NPs에 전달해야 하므로
@@ -834,13 +1024,12 @@ class FMD():
 
             plt.subplot(row, column, i+1)
             plt.scatter(x=fmdX, y=RRY, s=ones)
-            plt.ylim(-0.5, 1.5)
+            plt.ylim(-0.1, 1.1)
         
         plt.show()
 
-
-    def show_CM_venn_diagrams(self):
-        def show_CM_venn_diagram(eval_name, TP, FP, TN, FN):
+    def show_eval_venn_diagrams(self):
+        def show_eval_venn_diagram(eval_name, TP, FP, TN, FN):
             plt.figure(figsize=(10,8))
             # eval_U, 직사각형
             box_left = np.array([[-100, i] for i in range(-50, 50+1)])
@@ -915,180 +1104,32 @@ class FMD():
             plt.text(x=25, y=-40, s=f"{eval_name}", fontdict={'color': 'orange','size': 16})
             plt.show()
         for eval_name in self.eval_names:
-            show_CM_venn_diagram(eval_name, self.TP[eval_name], self.FP[eval_name], self.TN[eval_name], self.FN[eval_name])
+            show_eval_venn_diagram(eval_name, self.TP[eval_name], self.FP[eval_name], self.TN[eval_name], self.FN[eval_name])
     
     def show_efficience_and_FMD_ratio(self):
         for eval_name in self.eval_names:
             print(f"In {eval_name}")
-            print(f"오분류 비율 U = WR_U(N) = {self.N[eval_name]}", end=', ') # 오분류 비율 U = WR_U(N)
-            print(f"오분류 비율 FMD = WR_FMD(NPV) = {self.NPV[eval_name]}") # 오분류 비율 FMD = WR_FMD(NPV)
+            print(f"[오분류 비율 U = WR_U(N)] = {self.N[eval_name]}") # 오분류 비율 U = WR_U(N)
+            print(f"[오분류 비율 FMD = WR_FMD(NPV)] = {self.NPV[eval_name]}") # 오분류 비율 FMD = WR_FMD(NPV)
             print()
-            print(f"긍정적 정밀성(TPP) = {self.TPR[eval_name]}", end=', ') # 정분류 정밀성(TPR)
-            print(f"부정적 정밀성(TNP) = {self.TNR[eval_name]}")# 오분류 정밀성(TNR)
+            print(f"[긍정적 정밀성(TPR)] = {self.TPR[eval_name]}") # 정분류 정밀성(TPR)
+            print(f"[부정적 정밀성(TNR)] = {self.TNR[eval_name]}")# 오분류 정밀성(TNR)
+            print('-'*30) # 구분선
+            print(f"[정밀성 합] = {self.TPR[eval_name] + self.TNR[eval_name]}")# 정밀성 합
             print()
             # FMD ratio
             eval_U_size = len(self.eval_U[eval_name])
             eval_FMD_size = len(np.nonzero(self.eval_U[eval_name][self.is_eval_FMD[eval_name]])[0])
-            print(f"FMD 비율(|eval_FMD|/|eval_U|) = {eval_FMD_size/eval_U_size}")
+            print(f"[FMD 비율(|eval_FMD|/|eval_U|)] = {eval_FMD_size/eval_U_size}")
             print('-'*30) # 구분선
 
     def save(self, model_name):
+        # os.system(f'touch ./instances/{model_name}.pickle')
         # 인자로 지정된 경로와 이름으로 파일 저장
-        with open(f"./instances/{model_name}.pickle", "wb") as f:
+        with open(f"{self.root_dir}/instances/{model_name}.pickle", "wb") as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
     def load(self, model_name):
         # 인자로 지정된 경로와 이름으로 파일 불러오기
-        with open(f"./instances/{model_name}.pickle", "rb" ) as f:
+        with open(f"{self.root_dir}/instances/{model_name}.pickle", "rb" ) as f:
             return copy.deepcopy(pickle.load(f))
-
-    def create_practice(self):
-        '''
-        아마도 나중에 adapter를 만들 때 사용될 수 있을 것 같음.
-        '''
-
-        # 연습 데이터 랜덤 시드 설정
-        random_seed_id = 42
-        np.random.seed(random_seed_id)
-        # 연습 데이터 범위 설정
-        '''
-        연습 데이터 범위가 0~1로로 고정, np.random.rand(or random)으로 바로 구현 가능
-        '''
-        # random_start = 1; random_end = 2
-
-        # 디렉토리 설정
-        root_dir = "practice"
-        origin_dir = f"{root_dir}/origin"
-        eval_dir = f"{root_dir}/eval"
-        # 디렉토리 생성
-        os.system(f"mkdir {root_dir}")
-        os.system(f"mkdir {origin_dir}")
-        os.system(f"mkdir {eval_dir}")
-
-        # origin 데이터 종류 적기
-        origin_names="train rtest wtest"
-        # origin_K 각 데이터 종류마다의 개수
-        origin_K="10000 2000 4000"
-        # eval 데이터 종류 적기
-        eval_names="rotation_90 brightness_10 whiteness_10"
-        # eval_K 각 데이터 종류마다의 개수
-        eval_K="12000 4000 6000"
-        # L: 레이어의 개수, shape: 레이어의 모양
-        L="3";
-        shape = "12 12" + "\n"
-        shape += "12 2 3 4" + "\n"
-        shape += "24 8"
-
-        # data_infos.txt 파일로 저장
-        # origin 데이터 종류는 train rtest wtest로 이미 정해져 있으므로 파일에 저장하지 않음
-        os.system(f"touch {root_dir}/data_infos.txt")
-        data_infos_txt = open(f"{root_dir}/data_infos.txt", 'w')
-        data_infos_txt.write(origin_K + "\n")
-        data_infos_txt.write(eval_names + "\n")
-        data_infos_txt.write(eval_K + "\n")
-        data_infos_txt.write(L + "\n")
-        data_infos_txt.write(shape)
-        data_infos_txt.close()
-
-        # 자료구조를 바꾸어 for문 활용을 쉽게 하기
-        origin_names = origin_names.split()
-        origin_K = list(map(int,origin_K.split()))
-        origin_K_list = origin_K
-        origin_K = {}
-        for i in range(len(origin_names)):
-            origin_K[origin_names[i]] = origin_K_list[i]
-        
-        eval_names = eval_names.split()
-        eval_K = list(map(int,eval_K.split()))
-        eval_K_list = eval_K
-        eval_K = {}
-        for i in range(len(eval_names)):
-            eval_K[eval_names[i]] = eval_K_list[i]
-
-        L=int(L)
-        
-        shape = shape.split('\n')
-        for ith in range(len(shape)):
-            shape[ith] = list(map(int,shape[ith].split()))
-
-        # origin 연습 데이터 생성
-        for origin_name in origin_names:
-            os.system(f"mkdir {origin_dir}/{origin_name}")
-            # datas: 데이터들을 최대 1000개씩 담음.
-            # file_index: 0 ~ K-1 까지 파일을 1000개씩 담을건데 0에서부터 시작해서 1000개마다 1 증가함
-            datas = []; file_index = 0
-
-            for k in range(origin_K[origin_name]):
-                # data: 데이터는 레이어들을 담고 있음
-                data = []
-                # data에 레이어들을 담은 후
-                for l in range(L):
-                    lth_layer = np.random.random(shape[l])
-                    data.append(lth_layer)
-                # datas에 레이어들을 담은 data를 담음
-                datas.append(data)
-
-                # 1000개마다 데이터가 저장됨
-                if len(datas) == 1000:
-                    # file_index번째 datas를 저장
-                    with open(f'{origin_dir}/{origin_name}/{origin_name}_{file_index}.pickle', 'wb') as f:
-                        pickle.dump(datas, f, pickle.HIGHEST_PROTOCOL)
-                    # datas의 데이터를 램에서 제거
-                    del datas
-                    # datas를 빈 배열로 만듦
-                    datas = []
-                    # 파일 인덱스 1 증가
-                    file_index += 1
-
-            # datas의 데이터가 남아있다면, 1~999개의 데이터가 남아있다면 그 데이터도 마저 저장함
-            if len(datas) != 0:
-                with open(f'{origin_dir}/{origin_name}/{origin_name}_{file_index}.pickle', 'wb') as f:
-                    pickle.dump(datas, f, pickle.HIGHEST_PROTOCOL)
-
-            # 훈련 데이터의 경우
-            # 정분류(1), 오분류(0) 여부를 알려주는 넘파이 배열을 파일로 저장함
-            if origin_name == "train":
-                origin_result = np.random.randint(0,2, origin_K[origin_name])
-                # 1 -> True, 0 -> False로 변경
-                origin_result = np.array(origin_result, dtype="bool")
-                np.save(f"{origin_dir}/{origin_name}/{origin_name}_result.npy", origin_result)
-
-        # eval 연습 데이터 생성
-        for eval_name in eval_names:
-            os.system(f"mkdir {eval_dir}/{eval_name}")
-            # datas: 데이터들을 최대 1000개씩 담음.
-            # file_index: 0 ~ K-1 까지 파일을 1000개씩 담을건데 0에서부터 시작해서 1000개마다 1 증가함
-            datas = []; file_index = 0
-
-            for k in range(eval_K[eval_name]):
-                # data: 데이터는 레이어들을 담고 있음
-                data = []
-                # data에 레이어들을 담은 후
-                for l in range(L):
-                    lth_layer = np.random.random(shape[l])
-                    data.append(lth_layer)
-                # datas에 레이어들을 담은 data를 담음
-                datas.append(data)
-
-                # 1000개마다 데이터가 저장됨
-                if len(datas) == 1000:
-                    # file_index번째 datas를 저장
-                    with open(f'{eval_dir}/{eval_name}/{eval_name}_{file_index}.pickle', 'wb') as f:
-                        pickle.dump(datas, f, pickle.HIGHEST_PROTOCOL)
-                    # datas의 데이터를 램에서 제거
-                    del datas
-                    # datas를 빈 배열로 만듦
-                    datas = []
-                    # 파일 인덱스 1 증가
-                    file_index += 1
-
-            # datas의 데이터가 남아있다면, 1~999개의 데이터가 남아있다면 그 데이터도 마저 저장함
-            if len(datas) != 0:
-                with open(f'{eval_dir}/{eval_name}/{eval_name}_{file_index}.pickle', 'wb') as f:
-                    pickle.dump(datas, f, pickle.HIGHEST_PROTOCOL)
-
-            # 정분류(1), 오분류(0) 여부를 알려주는 넘파이 배열을 파일로 저장함
-            eval_result = np.random.randint(0,2, eval_K[eval_name])
-            # 1 -> True, 0 -> False로 변경
-            eval_result = np.array(eval_result, dtype="bool")
-            np.save(f"{eval_dir}/{eval_name}/{eval_name}_result.npy", eval_result)
