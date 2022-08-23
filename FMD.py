@@ -13,14 +13,14 @@ class FMD():
     square_NPs_figsize: show_square_NPs에서 그려지는 그래프의 figsize를 조절한다.
     square_NPs_columns: show_square_NPs에서 그려지는 그래프의 column을 조절한다.
     '''
-    root_dir=""; origin_dir=""; train_dir=""; rvalid_dir=""; wvalid_dir=""; eval_dir=""
+    class_dir=""; origin_dir=""; train_dir=""; rvalid_dir=""; wvalid_dir=""; eval_dir=""
     ''' dir_infos
-    root_dir:   관련된 데이터가 모두 저장되어 있는 디렉토리 경로
-    origin_dir: train, rvalid, wvalid가 있는 디렉토리
-    eval_dir:   거리를 잴 데이터가 있는 디렉토리
-    train_dir:  검증 데이터가 아닌 정분류된 훈련 피처 맵이 들어있는 디렉토리
-    rvalid_dir: 정분류 검증 피처 맵이 들어있는 디렉토리
-    wvalid_dir: 오분류 검증 피처 맵이 들어있는 디렉토리
+    class_dir:    클래스 데이터가 모두 저장되어 있는 디렉토리 경로
+    origin_dir:   train, rvalid, wvalid가 있는 디렉토리
+    eval_dir:     거리를 잴 데이터가 있는 디렉토리
+    train_dir:    검증 데이터가 아닌 정분류된 훈련 피처 맵이 들어있는 디렉토리
+    rvalid_dir:   정분류 검증 피처 맵이 들어있는 디렉토리
+    wvalid_dir:   오분류 검증 피처 맵이 들어있는 디렉토리
     '''
     origin_names=["train", "rvalid", "wvalid"]; origin_K={}; eval_names=[]; eval_K={}
     L=0; shape=[]; FMP_count=0; eval_U={}
@@ -66,16 +66,16 @@ class FMD():
     INST_names: 하이퍼 파라미터들로 만들어진 INST 이름들의 모임
     '''
 
-    def __init__(self, root_dir_=""):
+    def __init__(self, class_dir_=""):
         # root 디렉토리 입력이 없다면 return
-        if root_dir_=="":
+        if class_dir_=="":
             print("루트 디렉토리 경로를 설정해주세요.")
             return
 
-        # * root 디렉토리
-        self.root_dir = root_dir_
+        # * class 디렉토리
+        self.class_dir = class_dir_
         # * origin 디렉토리
-        self.origin_dir = f"{self.root_dir}/origin"
+        self.origin_dir = f"{self.class_dir}/origin"
         # 훈련 피처 맵을 저장하는 디렉토리
         self.train_dir=f"{self.origin_dir}/{self.origin_names[0]}"
         # 정분류 피처 맵을 저장하는 디렉토리
@@ -83,23 +83,23 @@ class FMD():
         # 오분류 피처 맵을 저장하는 디렉토리
         self.wvalid_dir=f"{self.origin_dir}/{self.origin_names[2]}"
         # * eval 디렉토리
-        self.eval_dir = f"{self.root_dir}/eval"
+        self.eval_dir = f"{self.class_dir}/eval"
 
         # * 객체를 불러오거나 저장할 디렉토리 생성
         # os.paht.isdir는 '\ ' 대신, ' '을 써도 됨
-        is_there_instances = os.path.isdir(f"{self.root_dir}/instances")
+        is_there_instances = os.path.isdir(f"{self.class_dir}/instances")
         # ' '을 '\ '로 바꿈
-        root_dir = self.root_dir.replace(' ', '\ ')
+        class_dir = self.class_dir.replace(' ', '\ ')
         # instances 디렉토리가 없을 경우만 instances 생성
         if not is_there_instances:
-            os.system(f"mkdir {root_dir}/instances")
+            os.system(f"mkdir {class_dir}/instances")
 
-    def set_root_dir(self, root_dir_):
+    def set_class_dir(self, class_dir_):
         # * root 디렉토리
-        self.root_dir = root_dir_
+        self.class_dir = class_dir_
 
         # * origin 디렉토리
-        self.origin_dir = f"{self.root_dir}/origin"
+        self.origin_dir = f"{self.class_dir}/origin"
         # * 훈련을 저장하는 디렉토리
         self.train_dir=f"{self.origin_dir}/{self.origin_names[0]}"
         # * 정분류 테스트를 저장하는 디렉토리
@@ -108,11 +108,11 @@ class FMD():
         self.wvalid_dir=f"{self.origin_dir}/{self.origin_names[2]}"
 
         # * eval 디렉토리
-        self.eval_dir = f"{self.root_dir}/eval"
+        self.eval_dir = f"{self.class_dir}/eval"
 
     def set_data_infos(self):
         # * root dir의 data_infos.txt 열기
-        data_infos = open(f"{self.root_dir}/data_infos.txt", 'r')
+        data_infos = open(f"{self.class_dir}/data_infos.txt", 'r')
         data_infos_strs = data_infos.read()
         data_infos_str_list = data_infos_strs.split('\n')
         # * 0th: origin_K
@@ -327,12 +327,21 @@ class FMD():
         # * 3. 모든 INST 초기화
         #  INST마다 하이퍼 파라미터를 초기화하고
         #  나머지는 빈 배열, 빈 딕셔너리, 초기값으로 초기화함.
-        for INST_name in self.INST_names:
+        for i, INST_name in enumerate(self.INST_names):
             # * 3.1. INST_name으로부터 HP 변수를 초기화
             INST_name_list=INST_name.split()
             FM_repre_HP=INST_name_list[0]; alpha_HP_str=INST_name_list[1]; DAM_HP=INST_name_list[2]
             lfmd_HP=INST_name_list[3]; W_HP=INST_name_list[4]; fmdc_HP=INST_name_list[5]
-
+            
+            # alpha_MHP_index 구하기
+            alpha_HP_list = alpha_HP_str.split(',')
+            alpha_MHP_index = int(alpha_HP_list[0])
+            
+            # INST_name 이름 바꾸기
+            # alpha_HP_str에서 0위치의 'alpha_MHP_index'와 1위치의 ','를 탈락시킴.
+            self.INST_names[i] = INST_name_str=FM_repre_HP+' '+alpha_HP_str[2:]+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+fmdc_HP # 클래스 속성 INST_name 바꾸기
+            INST_name = INST_name_str=FM_repre_HP+' '+alpha_HP_str[2:]+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+fmdc_HP # 지역 변수 INST_name 바꾸기
+            
             # * 3.2. INST를 딕셔너리로 초기화
             self.INSTs[INST_name] = {}
 
@@ -349,12 +358,10 @@ class FMD():
             self.INSTs[INST_name]['rmw']=[]
             self.INSTs[INST_name]['rmw_percent']=[]
 
-            alpha_HP_list = alpha_HP_str.split(',')
             # [rmw_max]: alpha_slice, alpha 초기화
             # alpha_HP가 rmw_max 방식이면 alpha_slice에 양수를 할당하고
             # alpha에 L 크기 만큼 -1로 초기화한다.
             if alpha_HP_list[1] == 'rmw_max':
-                alpha_MHP_index = int(alpha_HP_list[0])
                 self.INSTs[INST_name]['alpha_slice']=self.alpha_MHP[alpha_MHP_index][1]
                 for l in range(self.L):
                     self.INSTs[INST_name]['alpha'].append(-1)
@@ -362,9 +369,8 @@ class FMD():
             # alpha_HP가 특정 alpha 값들을 선택하는 방식이면 alpha_slice에 아무것도 할당하지 않는다.(0을 유지한다.)
             # 대신 alpha_HP의 특정 값들을 alpha에 할당한다.
             else:
-                alpha_MHP_index = int(alpha_HP_list[0])
                 self.INSTs[INST_name]['alpha'] = self.alpha_MHP[alpha_MHP_index]
-
+            
             # alpha를 넘파이로 변경
             self.INSTs[INST_name]['alpha'] = np.array(self.INSTs[INST_name]['alpha'], dtype='float')
             ''' alpha_infos
@@ -510,7 +516,7 @@ class FMD():
             alpha_HP_list = alpha_HP_str.split(',')
             FM_repre_HP = self.INSTs[INST_name]['FM_repre_HP']
             # * 1. rmw_max 방식일 경우, 문자열이 'rmw_max'일 경우
-            if alpha_HP_list[1] == 'rmw_max':
+            if alpha_HP_list[0] == 'rmw_max':
                 # rmw_max 방식일 경우 alpha_slice를 사용함.
                 alpha_slice = self.INSTs[INST_name]['alpha_slice']
                 # r-w가 최대가 되는 alpha, TAM, RAM, WAM을 찾음
@@ -1096,12 +1102,12 @@ class FMD():
 
     def show_dir_infos(self):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         print(f'[{data_set_name}, {class_name}]')
         print()
         # * 2. dir_infos 출력
-        print(f"root_dir:\t{self.root_dir}")
+        print(f"class_dir:\t{self.class_dir}")
         print(f"origin_dir:\t{self.origin_dir}")
         print(f"train_dir:\t{self.train_dir}")
         print(f"rvalid_dir:\t{self.rvalid_dir}")
@@ -1112,8 +1118,8 @@ class FMD():
 
     def show_data_infos(self):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         print(f'[{data_set_name}, {class_name}]')
         print()
         # * 2. data_infos 출력
@@ -1136,12 +1142,12 @@ class FMD():
         # * eval_U 이차 정방 행렬로 출력
         self.show_square_NPs(eval_U, eval_U_name, color_map=False)
 
-    def show_FM_repres(self, INST_name=None):
+    def show_FM_repres(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 없다면 데이터셋, 클래스를 출력하고, 특정 INST가 있다면 데이터셋, 클래스, INST_name을 출력한다.
-        if INST_name == None:
+        if INST_name == 'class':
             print(f'[{data_set_name}, {class_name}]')
         else:
             print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
@@ -1150,7 +1156,7 @@ class FMD():
         # * 2. FM_repres 출력
         self.set_square_NPs_infos([60,60],column=7)
         # * 특정 INST가 없다면 모든 HP들을 출력하고, 특정 INST가 있다면 그 HP만 출력한다.
-        if INST_name == None:
+        if INST_name == 'class':
             FM_repre_HPs = ['FM_min', 'FM_mean', 'FM_max']
         else:
             FM_repre_HPs = [self.INSTs[INST_name]['FM_repre_HP']]
@@ -1163,19 +1169,19 @@ class FMD():
             # * FM_repre, FM_repre_name 이차 정방 행렬로 출력
             self.show_square_NPs(TFM_repre, TFM_repre_name, title_fontsize=40); self.show_square_NPs(RFM_repre, RFM_repre_name, title_fontsize=40); self.show_square_NPs(WFM_repre, WFM_repre_name, title_fontsize=40)
 
-    def show_alpha_infos(self, INST_name=None):
+    def show_alpha_infos(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 없다면 데이터셋, 클래스를 출력하고, 특정 INST가 있다면 데이터셋, 클래스, INST_name을 출력한다.
-        if INST_name == None:
+        if INST_name == 'class':
             print(f'[{data_set_name}, {class_name}]')
         else:
             print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
         print()
         # * 2. alpha_infos 출력
         # * 특정 INST가 없다면 FM_min, FM_mean, FM_max 각각 alpha_min, alpha_max 출력
-        if INST_name == None:
+        if INST_name == 'class':
             FM_repre_HPs=['FM_min', 'FM_mean', 'FM_max']
             # 모든 FM_repre_HP에 대하여 alpha_min, alpha_max 출력
             for FM_repre_HP in FM_repre_HPs:
@@ -1288,10 +1294,10 @@ class FMD():
 
         print('-'*100)
 
-    def show_HP(self, INST_name):
+    def show_HP(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
         print()
         # * 2. HP들 출력
@@ -1309,10 +1315,10 @@ class FMD():
 
         print('-'*100)
 
-    def show_AMs(self, INST_name):
+    def show_AMs(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
         print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
         print()
@@ -1328,10 +1334,10 @@ class FMD():
         # * AM_repres, AM_repre_names 이차 정방 행렬로 출력
         self.show_square_NPs(TAM, TAM_name, title_fontsize=40); self.show_square_NPs(RAM, RAM_name, title_fontsize=40); self.show_square_NPs(WAM, WAM_name, title_fontsize=40); self.show_square_NPs(DAM, DAM_name, title_fontsize=40)
 
-    def show_DAM_infos(self, INST_name):
+    def show_DAM_infos(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
         print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
         print()
@@ -1347,10 +1353,10 @@ class FMD():
         DAM=self.INSTs[INST_name]['DAM'].copy(); DAM_name = ['DAM_' + str(l) + f'({DAM_error_flag[l]})' for l in range(self.L)]
         self.show_square_NPs(DAM, DAM_name, title_fontsize=40)
 
-    def show_layer_infos(self, INST_name):
+    def show_layer_infos(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
         print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
         print()
@@ -1370,11 +1376,11 @@ class FMD():
 
         print('-'*100)
 
-    def show_rvalid_fmds_wvalid_fmds(self, INST_name, show_category=True, show_HP_fmdcs=True):
+    def show_rvalid_fmds_wvalid_fmds(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', show_category=True, show_HP_fmdcs=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
             print()
@@ -1427,10 +1433,10 @@ class FMD():
                 else:
                     print(f"{name}:\t\t\t\t{value: 0.4f}")
 
-    def show_fmdc_infos(self, INST_name):
+    def show_fmdc_infos(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
         print(f'[{data_set_name}, {class_name}, [{INST_name}]]')
         print()
@@ -1450,11 +1456,11 @@ class FMD():
             else:
                 print(f"\t\t{key}:\t\t\t\t{HP_fmdcs[key]: 0.4f}")
 
-    def show_eval_venn_diagram(self, INST_name, eval_name, show_category=True):
+    def show_eval_venn_diagram(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1534,11 +1540,11 @@ class FMD():
         plt.axis('off')
         plt.show()
 
-    def show_efficience_and_FMD_ratio(self, INST_name, eval_name, show_category=True):
+    def show_efficience_and_FMD_ratio(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1553,11 +1559,11 @@ class FMD():
         eval_FMD_size = len(self.eval_U[eval_name][self.INSTs[INST_name]['is_eval_FMD'][eval_name]])
         print(f"[FMD ratio(|eval_FMD|/|eval_U|)]:\t{eval_FMD_size/eval_U_size: 0.4f}")
 
-    def show_eval_U_predicted_matched(self, INST_name, eval_name, show_category=True):
+    def show_eval_U_predicted_matched(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1574,11 +1580,11 @@ class FMD():
         accuracy = (TP + TN) / (TP + FN + TN + FP)
         print(f"accuracy:\t{accuracy}")
 
-    def show_eval_fmd_right_ratio(self, INST_name, eval_name, show_category=True):
+    def show_eval_fmd_right_ratio(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1666,11 +1672,11 @@ class FMD():
         plt.ylabel('right ratio', {'size': '16'})
         plt.show()
 
-    def show_fmds(self, INST_name, eval_name, show_category=True):
+    def show_fmds(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1723,16 +1729,16 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: .4f}")
 
-    def show_efficiency(self, INST_name, eval_name, show_category=True):
+    def show_efficiency(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
     
-        root_dir_splited = self.root_dir.split('/'); class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/'); class_name = class_dir_splited[-1]
         bar_width = 0.35
         alpha = 0.5
         index = np.array([0])
@@ -1748,10 +1754,10 @@ class FMD():
         plt.legend((p1[0], p2[0]), ('U efficiency', 'FMD efficiency'))
         plt.show()
 
-    def show_eval_infos(self, INST_name, eval_name):
+    def show_eval_infos(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
         # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
         # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
         print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
         print()
@@ -1770,11 +1776,11 @@ class FMD():
         # show_efficiency 출력
         self.show_efficiency(INST_name, eval_name, show_category=False)
 
-    def show_fmdc_TNR_TPR(self, INST_name, eval_name, show_category=True):
+    def show_fmdc_TNR_TPR(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1827,11 +1833,11 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: 0.4f}")
     
-    def show_roc_curve(self, INST_name, eval_name, show_category=True):
+    def show_roc_curve(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1855,11 +1861,11 @@ class FMD():
 
         print(f'AUC: {AUC: 0.4f}')
     
-    def show_CM_info_fmdc(self, INST_name, eval_name, show_category=True):
+    def show_CM_info_fmdc(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
-            root_dir_splited = self.root_dir.split('/')
-            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            class_dir_splited = self.class_dir.split('/')
+            data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
@@ -1968,7 +1974,14 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: 0.4f}")
 
-    def show_fmdcs_infos(self, INST_name, eval_name):
+    def show_fmdcs_infos(self, INST_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+        # * 1. 이 show 메소드를 실행하는 범주 출력
+        class_dir_splited = self.class_dir.split('/')
+        data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
+        # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
+        print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
+        print()
+        
         # fmdc_TNR_TPR 그래프 그리기
         self.show_fmdc_TNR_TPR(INST_name, eval_name, show_category=False)
         # show_roc_curve 그래프 그리기
