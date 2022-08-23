@@ -1,6 +1,4 @@
-from multiprocessing.sharedctypes import Value
-from tkinter import E
-from turtle import right
+# import cupy as np # CUDA를 지원하는 컴퓨터라면 CUDA 버전에 맞게 cupy를 설치하여 cupy 임포트
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -24,7 +22,7 @@ class FMD():
     rvalid_dir: 정분류 검증 피처 맵이 들어있는 디렉토리
     wvalid_dir: 오분류 검증 피처 맵이 들어있는 디렉토리
     '''
-    origin_names = ["train", "rvalid", "wvalid"]; origin_K={}; eval_names = []; eval_K={}
+    origin_names=["train", "rvalid", "wvalid"]; origin_K={}; eval_names=[]; eval_K={}
     L=0; shape=[]; FMP_count=0; eval_U={}
     ''' data_infos
     origin_names:          근원 데이터 타입에 대한 이름
@@ -108,7 +106,7 @@ class FMD():
         self.rvalid_dir=f"{self.origin_dir}/{self.origin_names[1]}"
         # * 오분류 테스트를 저장하는 디렉토리
         self.wvalid_dir=f"{self.origin_dir}/{self.origin_names[2]}"
-        
+
         # * eval 디렉토리
         self.eval_dir = f"{self.root_dir}/eval"
 
@@ -119,14 +117,14 @@ class FMD():
         data_infos_str_list = data_infos_strs.split('\n')
         # * 0th: origin_K
         origin_K = list(map(int, data_infos_str_list[0].split()))
-        origin_name_K_zip = zip(self.origin_names, origin_K) 
+        origin_name_K_zip = zip(self.origin_names, origin_K)
         for origin_name, origin_K in origin_name_K_zip:
             self.origin_K[origin_name] = origin_K
         # * 1th: eval_names
         self.eval_names = data_infos_str_list[1].split()
         # * 2th: eval_K
         eval_K = list(map(int, data_infos_str_list[2].split()))
-        eval_name_K_zip = zip(self.eval_names, eval_K) 
+        eval_name_K_zip = zip(self.eval_names, eval_K)
         for eval_name, eval_K in eval_name_K_zip:
             self.eval_K[eval_name] = eval_K
         # * 3th: L
@@ -199,7 +197,7 @@ class FMD():
                 # k번 째 데이터의 OFMPI, OFMPO 구함
                 cur_OFMPI_k = k // self.FMP_count
                 OFMPO_k = k % self.FMP_count
-                
+
                 # * OFMP_k가 이미 램에 있다면 가지고 오지 않고
                 # * 램에 없다면 이전 OFMP를 램에서 지우고 현재 OFMP를 램으로 가지고 온다.
                 # cur_OFMPI_k와 prev_OFMPI_k가 같다면
@@ -213,7 +211,7 @@ class FMD():
                     with open(f'{origin_dir}/{origin}_{cur_OFMPI_k}.pickle', 'rb') as f:
                         OFMP_k = pickle.load(f)
 
-                # prev_OFMPI_k를 cur_OFMPI_k로 초기화 
+                # prev_OFMPI_k를 cur_OFMPI_k로 초기화
                 prev_OFMPI_k = cur_OFMPI_k
 
                 for l in range(L):
@@ -223,7 +221,7 @@ class FMD():
                     OFM_repre_max_l_mask = OFM_repre['FM_max'][l] < OFM_k_l
                     np.place(OFM_repre['FM_min'][l], OFM_repre_min_l_mask, OFM_k_l)
                     np.place(OFM_repre['FM_max'][l], OFM_repre_max_l_mask, OFM_k_l)
-            
+
             # OFM을 모두 순회한 후 OFMP_k의 기억공간을 램에서 제거
             del OFMP_k
 
@@ -281,7 +279,7 @@ class FMD():
         # rmw_min, rmw_max 넘파이로 변경
         self.rmw_min = np.array(self.rmw_min); self.rmw_max = np.array(self.rmw_max)
 
-    def set_MHP(self, FM_repre_MHP=[], alpha_MHP=[], DAM_MHP=[], W_MHP=[], lfmd_MHP=[], fmdc_MHP=[]):
+    def set_MHP(self, FM_repre_MHP=['FM_mean'], alpha_MHP=[['rmw_max', 1000]], DAM_MHP=['all'], W_MHP=['C'], lfmd_MHP=['se_lfmd'], fmdc_MHP=['rvalid_fmds_average']):
         # * 램 용량을 초과하지 않도록 나중에 이 부분을 추가함.
         limited_number = 1219 # instance 하나 당 820KB일 때, limited_number: instance들의 총량이 1GB가 되는 개수.
         number_of_all_case = len(FM_repre_MHP) * len(alpha_MHP) * len(DAM_MHP) * len(W_MHP) * len(lfmd_MHP) * len(fmdc_MHP)
@@ -291,17 +289,17 @@ class FMD():
         elif number_of_all_case <= 0:
             print(f'하이퍼 파라미터 경우의 수가 0이하임')
             return
-
+            
         # * MHP 초기화
         self.FM_repre_MHP = FM_repre_MHP; self.alpha_MHP = alpha_MHP; self.DAM_MHP = DAM_MHP
-        self.W_MHP = W_MHP; self.lfmd_MHP = lfmd_MHP; self.fmdc_MHP = fmdc_MHP  
+        self.W_MHP = W_MHP; self.lfmd_MHP = lfmd_MHP; self.fmdc_MHP = fmdc_MHP
 
     def init_INSTs(self):
         # * 1. alpha_MHP_str 생성
         # alpha_MHP 종류마다 문자열로 바꾸는 방식을 달리함.
         alpha_MHP_str = []
         for i in range(len(self.alpha_MHP)):
-            # 'rmw_max'인 경우 
+            # 'rmw_max'인 경우
             if self.alpha_MHP[i][0] == "rmw_max":
                 alpha_MHP_str.append(str(i)+','+self.alpha_MHP[i][0]+','+str(self.alpha_MHP[i][1]))
             else:
@@ -313,7 +311,7 @@ class FMD():
                         alpha_MHP_i_str += f"{alpha_MHP_i_ele: 0.4f}".strip() + str(',')
 
                 alpha_MHP_str.append(str(i)+','+alpha_MHP_i_str)
-        
+
         # * 2. INST_name 생성
         # INST_name을 리스트로 생성
         self.INST_names = list(itertools.product(self.FM_repre_MHP, alpha_MHP_str, self.DAM_MHP, self.lfmd_MHP, self.W_MHP, self.fmdc_MHP))
@@ -431,24 +429,48 @@ class FMD():
             self.INSTs[INST_name]['P']={}; self.INSTs[INST_name]['N']={}
             self.INSTs[INST_name]['TPR']={}; self.INSTs[INST_name]['TNR']={}; self.INSTs[INST_name]['PPV']={}; self.INSTs[INST_name]['NPV']={}
             self.INSTs[INST_name]['FNR']={}; self.INSTs[INST_name]['FPR']={}; self.INSTs[INST_name]['FDR']={}; self.INSTs[INST_name]['FOR']={}
-            self.INSTs[INST_name]['fmdcs']={}; self.INSTs[INST_name]['TPRs']={}; self.INSTs[INST_name]['TNRs']={}; self.INSTs[INST_name]['AUC']={}
             for eval_name in self.eval_names:
                 self.INSTs[INST_name]['is_eval_FMD'][eval_name]=[]; self.INSTs[INST_name]['eval_fmds'][eval_name]=[]
                 self.INSTs[INST_name]['TP'][eval_name]=-1; self.INSTs[INST_name]['FN'][eval_name]=-1; self.INSTs[INST_name]['TN'][eval_name]=-1; self.INSTs[INST_name]['FP'][eval_name]=-1
                 self.INSTs[INST_name]['P'][eval_name]=-1; self.INSTs[INST_name]['N'][eval_name]=-1
                 self.INSTs[INST_name]['TPR'][eval_name]=-1; self.INSTs[INST_name]['TNR'][eval_name]=-1; self.INSTs[INST_name]['PPV'][eval_name]=-1; self.INSTs[INST_name]['NPV'][eval_name]=-1
                 self.INSTs[INST_name]['FNR'][eval_name]=-1; self.INSTs[INST_name]['FPR'][eval_name]=-1; self.INSTs[INST_name]['FDR'][eval_name]=-1; self.INSTs[INST_name]['FOR'][eval_name]=-1
-                self.INSTs[INST_name]['fmdcs'][eval_name]=[]; self.INSTs[INST_name]['TPRs'][eval_name]=[]; self.INSTs[INST_name]['TNRs'][eval_name]=[]; self.INSTs[INST_name]['AUC'][eval_name]=-1
 
             ''' eval_infos
-            eval_U:         평가 데이터의 정분류(True), 오분류(False) 유무를 True, False로 담는다
-            is_eval_FMD:    평가 데이터가 is_eval_FMD이면 True, eval_fmd가 아니면 False를 담는다.
-            eval_fmds:      평가 데이터들의 fmd를 담는다.
-            TP, FN, TN, FP: confusion matrix를 표현하기 위한 가장 기본적인 속성이다.
-                            TPR, TNR, PPV, NPV, FNR, FPR, FDR, FOR 등을 표현할 수 있다.
-            fmdcs:          eval_fmds를 density(=1000)만큼 조각 내서 구한 fmdc를 모두 담는다.
-            TPRs, TNRs:     fmdcs의 원소마다 TPRs, TNRs의 원소를 구한다.
-            AUC:            위 TPRs, TNRs을 가지고 만든 ROC curve의 아래 부분과 y=0, x=1 사이의 넓이이다.
+            eval_U:                      평가 데이터의 정분류(True), 오분류(False) 유무를 True, False로 담는다
+            is_eval_FMD:                 평가 데이터가 is_eval_FMD이면 True, eval_fmd가 아니면 False를 담는다.
+            eval_fmds:                   평가 데이터들의 fmd를 담는다.
+            
+            TP, FN, TN, FP,
+            N, P,
+            TPR, TNR, PPV, NPV,
+            FNR, FPR, FDR, FOR:          confusion matrix를 표현하기 위한 가장 기본적인 속성이다.
+            '''
+            
+            # * 3.10. fmdcs_infos
+            self.INSTs[INST_name]['fmdcs']={}
+            self.INSTs[INST_name]['TP_fmdc']={}; self.INSTs[INST_name]['FN_fmdc']={}; self.INSTs[INST_name]['TN_fmdc']={}; self.INSTs[INST_name]['FP_fmdc']={}
+            self.INSTs[INST_name]['P_fmdc']={}; self.INSTs[INST_name]['N_fmdc']={}
+            self.INSTs[INST_name]['TPR_fmdc']={}; self.INSTs[INST_name]['TNR_fmdc']={}; self.INSTs[INST_name]['PPV_fmdc']={}; self.INSTs[INST_name]['NPV_fmdc']={}
+            self.INSTs[INST_name]['FNR_fmdc']={}; self.INSTs[INST_name]['FPR_fmdc']={}; self.INSTs[INST_name]['FDR_fmdc']={}; self.INSTs[INST_name]['FOR_fmdc']={}
+            self.INSTs[INST_name]['AUC']={}
+            for eval_name in self.eval_names:
+                self.INSTs[INST_name]['fmdcs'][eval_name]=[]
+                self.INSTs[INST_name]['TP_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FN_fmdc'][eval_name]=[]; self.INSTs[INST_name]['TN_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FP_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['P_fmdc'][eval_name]=[]; self.INSTs[INST_name]['N_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['TPR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['TNR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['PPV_fmdc'][eval_name]=[]; self.INSTs[INST_name]['NPV_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['FNR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FPR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FDR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FOR_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['AUC'][eval_name]=-1
+                
+            ''' fmdcs_infos
+            * eval_infos를 구하고 난 후에 구하는 값들이다.
+            fmdcs:                                              eval_fmds를 density(=1000)만큼 조각 내서 구한 fmdc를 모두 담는다.
+            # ? CM_info는 TP, FN, TN, FN, N, P, TPR, TNR, PPV, NPV, FNR, FPR, FDR, FOR을 대명사로 표현할 때 쓰인다.
+            # ? fmdcs_infos는 fmdcs, CM_info_fmdcs, AUC 이렇게 있다고 볼 수 있다.
+            TP_fmdc, FN_fmdc, TN_fmdc, FP_fmdc, N_fmdc, P_fmdc,
+            TPR_fmdc, TNR_fmdc, PPV_fmdc, NPV_fmdc,
+            FNR_fmdc, FPR_fmdc, FDR_fmdc, FOR_fmdc,:            fmdcs의 원소마다 14개 배열의 각 원소를 구한다.
+            AUC:                                                위 TPR_fmdc, TNRs_fmdc을 가지고 만든 ROC curve의 아래 부분과 y=0, x=1 사이의 넓이이다.
             '''
 
     def set_AMs_and_alpha_infos_and_DAM_infos(self):
@@ -500,7 +522,7 @@ class FMD():
                         TAM_l = np.array(self.TFM_repre[FM_repre_HP][l] > alpha_l)
                         RAM_l = np.array(self.RFM_repre[FM_repre_HP][l] > alpha_l)
                         WAM_l = np.array(self.WFM_repre[FM_repre_HP][l] > alpha_l)
-                        
+
                         TAM_l_xnor_RAM_l = np.logical_not(np.logical_xor(TAM_l, RAM_l))
                         TAM_l_xnor_WAM_l = np.logical_not(np.logical_xor(TAM_l, WAM_l))
                         # r_l은 TAM_l과 RAM_l이 얼마나 유사한지 보여준다.
@@ -552,10 +574,10 @@ class FMD():
                     self.INSTs[INST_name]['TAM'][l] = np.array(self.TFM_repre[FM_repre_HP][l] > alpha[l])
                     self.INSTs[INST_name]['RAM'][l] = np.array(self.RFM_repre[FM_repre_HP][l] > alpha[l])
                     self.INSTs[INST_name]['WAM'][l] = np.array(self.WFM_repre[FM_repre_HP][l] > alpha[l])
-                    
+
                     TAM_l_xnor_RAM_l = np.logical_not(np.logical_xor(self.INSTs[INST_name]['TAM'][l], self.INSTs[INST_name]['RAM'][l]))
                     TAM_l_xnor_WAM_l = np.logical_not(np.logical_xor(self.INSTs[INST_name]['TAM'][l], self.INSTs[INST_name]['WAM'][l]))
-                
+
                     r_l = len(np.where(TAM_l_xnor_RAM_l == True)[0])
                     w_l = len(np.where(TAM_l_xnor_WAM_l == True)[0])
 
@@ -621,7 +643,7 @@ class FMD():
                     DAM_indexes_l[i] = tuple(DAM_indexes_l[i])
 
                 self.INSTs[INST_name]['DAM_indexes'].append(DAM_indexes_l)
-    
+
     def se_lfmd(self, INST_name, FM_k_l, l, percent=50, sensitive=1):
         '''
         se_lfmd: shift exponential layer feature map distance
@@ -638,12 +660,12 @@ class FMD():
 
         # lengths: 인덱스 마다 TFM_repre_norm과 FM_k_l_norm 사이의 거리(절대값)를 구함
         lengths = abs(TFM_repre_l_norm - FM_k_l_norm)
-        
+
         # 'shift_value'을 구함
         # norm_min, norm_max가 같은 두 값의 길이의 min(length_min)은 0이고
         # length_max는 norm_max - norm_min임
         length_max = norm_max - norm_min; length_min = 0
-        # 
+        #
         length_interval_max = length_max - length_min
         length_interval_percent = length_interval_max * (percent/100)
         # value_to_be_origin는 나중에 원점이 될 값임
@@ -657,9 +679,9 @@ class FMD():
             exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive)
         # se를 취한 값들을 모두 더한 것이 se_lfmd임
         se_lfmd = exp_lengths_minus_shift_value.sum()
-        
+
         return se_lfmd
-    
+
     def normalize_layer(self, layer, min, max):
         '''
         'layer의 min, max'으로 layer를 'min-max 정규화'를 한 후
@@ -673,7 +695,7 @@ class FMD():
         if layer_max - layer_min != 0:
             # layer에 layer_min, layer_max으로 min-max 적용
             layer = (layer - layer_min) / (layer_max - layer_min)
-            
+
             scalar_multiplyer = max - min
             scalar_adder = min
 
@@ -686,7 +708,7 @@ class FMD():
             normalized_layer = layer  + min + (max - min)/2
 
         return normalized_layer
-    
+
     def Ln_lfmd(self, INST_name, FM_k_l, l, n=1):
         '''
         Ln_lfmd: Ln layer feature map distance
@@ -708,7 +730,7 @@ class FMD():
         lengths_pow_n = np.power(lengths, n)
         # lengths_pow_n을 모두 더한 후 1/n 지수를 취하면 Ln_lfmd임
         Ln_lfmd = np.power(lengths_pow_n.sum(), 1/n)
-        
+
         return Ln_lfmd
 
     def lfmd(self, lfmd_HP):
@@ -732,7 +754,7 @@ class FMD():
             fmd += self.INSTs[INST_name]['W'][l]*lfmds[l]
 
         return fmd
-    
+
     def set_fmds(self):
         def set_fmds(INST_name, valid_name):
             # RFM와 WFM을 부르기 위한 변수들을 선언함
@@ -775,7 +797,7 @@ class FMD():
 
     def set_fmdc(self):
         for INST_name in self.INST_names:
-            # * 가독성을 위해 간단한 변수명을 사용함 
+            # * 가독성을 위해 간단한 변수명을 사용함
             fmdc_HP = self.INSTs[INST_name]['fmdc_HP']
             rvalid_fmds = self.INSTs[INST_name]['rvalid_fmds']
             wvalid_fmds = self.INSTs[INST_name]['wvalid_fmds']
@@ -806,7 +828,16 @@ class FMD():
             elif fmdc_HP == 'rvalid_fmds_max_wvalid_fmds_min_average':
                 self.INSTs[INST_name]['fmdc'] = self.INSTs[INST_name]['HP_fmdcs']['rvalid_fmds_max_wvalid_fmds_min_average']
 
-    def fit(self, FM_repre_MHP, alpha_MHP, DAM_MHP, W_MHP, lfmd_MHP, fmdc_MHP):
+    def fit(self, FM_repre_MHP=['FM_mean'], alpha_MHP=[['rmw_max', 1000]], DAM_MHP=['all'], W_MHP=['C'], lfmd_MHP=['se_lfmd'], fmdc_MHP=['rvalid_fmds_average']):
+        '''
+        기본값:
+            FM_repre_MHP=['FM_mean']
+            alpha_MHP=[['rmw_max', 1000]]
+            DAM_MHP=['all']
+            W_MHP=['C']
+            lfmd_MHP=['se_lfmd']
+            fmdc_MHP=['rvalid_fmds_average']
+        '''
         self.set_data_infos()
         self.set_FM_repres()
         self.set_alpha_rmw_min_max()
@@ -816,40 +847,69 @@ class FMD():
         self.set_fmds()
         self.set_fmdc()
 
-    def set_TPRs_TNRs_AUC(self):
+    def set_fmdcs_infos(self):
         density = 1000 # 얼마나 많이 점을 찍을지 정함.
         for INST_name in self.INST_names:
             for eval_name in self.eval_names:
-                # * 1. fmdcs 초기화
+                # * 1. fmdcs_infos를 초기값으로 초기화
+                # * 1.1. fmdcs를 초기값으로 초기화
                 self.INSTs[INST_name]['fmdcs'][eval_name]=[]
                 eval_fmds = self.INSTs[INST_name]['eval_fmds'][eval_name]
                 fmdc_min = eval_fmds.min(); fmdc_max = eval_fmds.max()
                 fmdc_interval_length = (fmdc_max - fmdc_min) / density
                 self.INSTs[INST_name]['fmdcs'][eval_name] = np.array([fmdc_min + interval_offset*fmdc_interval_length for interval_offset in range(density+1)])
+                # ? CM_info는 TP, FN, TN, FN, N, P, TPR, TNR, PPV, NPV, FNR, FPR, FDR, FOR을 대명사로 표현할 때 쓰인다.
+                # * 1.2. CM_info를 초기값으로 초기화
+                self.INSTs[INST_name]['TP_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FN_fmdc'][eval_name]=[]; self.INSTs[INST_name]['TN_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FP_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['P_fmdc'][eval_name]=[]; self.INSTs[INST_name]['N_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['TPR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['TNR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['PPV_fmdc'][eval_name]=[]; self.INSTs[INST_name]['NPV_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['FNR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FPR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FDR_fmdc'][eval_name]=[]; self.INSTs[INST_name]['FOR_fmdc'][eval_name]=[]
+                self.INSTs[INST_name]['AUC'][eval_name]=-1
                 
-                # * 2. TPRs, TNRs 구하기
-                self.INSTs[INST_name]['TPRs'][eval_name]=[]; self.INSTs[INST_name]['TNRs'][eval_name]=[]; self.INSTs[INST_name]['AUC'][eval_name]=-1
+                # * 2. fmdc마다 달라지는 CM_info 초기화
                 # eval_U, eval_U_K, eval_U_r, eval_U_w, eval_fmds 구하기
                 eval_U = self.eval_U[eval_name]
                 eval_U_K = self.eval_K[eval_name]; eval_U_r = len(np.nonzero(eval_U)[0]); eval_U_w = eval_U_K - eval_U_r
                 eval_fmds = self.INSTs[INST_name]['eval_fmds'][eval_name]
-                # 모든 fmdc에 대한 TPR, TNR 구해서 TPRs, TNRs에 모두 넣기
+                # * 2.1 모든 fmdc에 대한 CM_info 구해서 CM_infos에 모두 넣기
                 for fmdc in self.INSTs[INST_name]['fmdcs'][eval_name]:
                     # is_eval_FM 구하기
                     is_eval_FMD = eval_fmds >= fmdc
                     # eval_FMD_K, eval_FMD_r, eval_FMD_w 구하기
                     eval_FMD_K = len(eval_U[is_eval_FMD]); eval_FMD_r = len(np.nonzero(eval_U[is_eval_FMD])[0]); eval_FMD_w = eval_FMD_K - eval_FMD_r
-                    # fmdc에 대한 TPR, TNR 구해서 TPRs, TNRs에 각각 넣기
-                    TPR = (eval_U_r - eval_FMD_r)/eval_U_r; TNR = eval_FMD_w/eval_U_w
-                    self.INSTs[INST_name]['TPRs'][eval_name].append(TPR); self.INSTs[INST_name]['TNRs'][eval_name].append(TNR)
-                
-                self.INSTs[INST_name]['TPRs'][eval_name] = np.array(self.INSTs[INST_name]['TPRs'][eval_name]); self.INSTs[INST_name]['TNRs'][eval_name] = np.array(self.INSTs[INST_name]['TNRs'][eval_name])
-                
+                    # fmdc에 대한 CM_info 구해서 CM_info에 각각 넣기
+                    TP=(eval_U_r-eval_FMD_r)/eval_U_K; FN=eval_FMD_r/eval_U_K; TN=eval_FMD_w/eval_U_K; FP=(eval_U_w-eval_FMD_w)/eval_U_K
+                    P=TP+FN; N=TN+FP
+                    TPR=TP/P; TNR=TN/N
+                    if (TP+FP) != 0:
+                        PPV=TP/(TP+FP); FDR=FP/(TP+FP)
+                    else:
+                        PPV=-1; FDR=-1
+                    if (FN+TN) != 0:
+                        NPV=TN/(FN+TN); FOR=FN/(FN+TN)
+                    else:
+                        NPV=-1; FOR=-1
+                    FNR=FN/P; FPR=FP/N
+                    
+                    self.INSTs[INST_name]['TP_fmdc'][eval_name].append(TP); self.INSTs[INST_name]['FN_fmdc'][eval_name].append(FN); self.INSTs[INST_name]['TN_fmdc'][eval_name].append(TN); self.INSTs[INST_name]['FP_fmdc'][eval_name].append(FP)
+                    self.INSTs[INST_name]['P_fmdc'][eval_name].append(P); self.INSTs[INST_name]['N_fmdc'][eval_name].append(N)
+                    self.INSTs[INST_name]['TPR_fmdc'][eval_name].append(TPR); self.INSTs[INST_name]['TNR_fmdc'][eval_name].append(TNR); self.INSTs[INST_name]['PPV_fmdc'][eval_name].append(PPV); self.INSTs[INST_name]['NPV_fmdc'][eval_name].append(NPV)
+                    self.INSTs[INST_name]['FNR_fmdc'][eval_name].append(FNR); self.INSTs[INST_name]['FPR_fmdc'][eval_name].append(FPR); self.INSTs[INST_name]['FDR_fmdc'][eval_name].append(FDR); self.INSTs[INST_name]['FOR_fmdc'][eval_name].append(FOR)
+
+                # * 2.2 CM_infos 모두 넘파이 배열로 초기화
+                self.INSTs[INST_name]['TP_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['TP_fmdc'][eval_name]); self.INSTs[INST_name]['FN_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['FN_fmdc'][eval_name])
+                self.INSTs[INST_name]['TN_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['TN_fmdc'][eval_name]); self.INSTs[INST_name]['FP_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['FP_fmdc'][eval_name])
+                self.INSTs[INST_name]['P_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['P_fmdc'][eval_name]); self.INSTs[INST_name]['N_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['N_fmdc'][eval_name])
+                self.INSTs[INST_name]['TPR_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['TPR_fmdc'][eval_name]); self.INSTs[INST_name]['TNR_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['TNR_fmdc'][eval_name])
+                self.INSTs[INST_name]['PPV_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['PPV_fmdc'][eval_name]); self.INSTs[INST_name]['NPV_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['NPV_fmdc'][eval_name])
+                self.INSTs[INST_name]['FNR_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['FNR_fmdc'][eval_name]); self.INSTs[INST_name]['FPR_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['FPR_fmdc'][eval_name])
+                self.INSTs[INST_name]['FDR_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['FDR_fmdc'][eval_name]); self.INSTs[INST_name]['FOR_fmdc'][eval_name] = np.array(self.INSTs[INST_name]['FOR_fmdc'][eval_name])
+
                 # * 3. AUC 구하기
                 self.INSTs[INST_name]['AUC'][eval_name] = 0
-                for i in range(len(self.INSTs[INST_name]['TNRs'][eval_name])-1):
-                    TPR_middle_interval_i = (self.INSTs[INST_name]['TPRs'][eval_name][i+1] + self.INSTs[INST_name]['TPRs'][eval_name][i])/2;
-                    one_minus_TNR_length_interval_i = (1-self.INSTs[INST_name]['TNRs'][eval_name][i+1]) - (1-self.INSTs[INST_name]['TNRs'][eval_name][i]) # 1-TNR = FPR
+                for i in range(len(self.INSTs[INST_name]['TNR_fmdc'][eval_name])-1):
+                    TPR_middle_interval_i = (self.INSTs[INST_name]['TPR_fmdc'][eval_name][i+1] + self.INSTs[INST_name]['TPR_fmdc'][eval_name][i])/2;
+                    one_minus_TNR_length_interval_i = (1-self.INSTs[INST_name]['TNR_fmdc'][eval_name][i+1]) - (1-self.INSTs[INST_name]['TNR_fmdc'][eval_name][i]) # 1-TNR = FPR
                     AUC_interval_i = one_minus_TNR_length_interval_i * TPR_middle_interval_i
                     self.INSTs[INST_name]['AUC'][eval_name] += AUC_interval_i
 
@@ -863,7 +923,7 @@ class FMD():
             for eval_name in self.eval_names:
                 # self.fmds[eval_name], self.is_eval_FMD[eval_name]는
                 # self.set_data_infos_and_related()에서 []로 초기화됨
-                
+
                 # EFM을 부르기 위한 변수들을 선언함
                 eval_dir=f'{self.eval_dir}/{eval_name}'; eval_K=self.eval_K[eval_name]
                 EFMP_k=None; prev_EFMPI_k=None; cur_EFMPI_k=None
@@ -889,19 +949,19 @@ class FMD():
                         with open(f'{eval_dir}/{eval_name}_{cur_EFMPI_k}.pickle', 'rb') as f:
                             EFMP_k = pickle.load(f)
 
-                    # prev_EFMPI_k를 cur_EFMPI_k로 초기화 
+                    # prev_EFMPI_k를 cur_EFMPI_k로 초기화
                     prev_EFMPI_k = cur_EFMPI_k
 
                     EFM_k = EFMP_k[EFMPO_k]
-                    
+
                     fmd = self.fmd(INST_name, EFM_k)
-                    
+
                     self.INSTs[INST_name]['is_eval_FMD'][eval_name].append(fmd >= self.INSTs[INST_name]['fmdc'])
                     self.INSTs[INST_name]['eval_fmds'][eval_name].append(fmd)
-                
+
                 # eval_name을 모두 순회한 후 EFMP_k의 기억공간을 램에서 제거
                 del EFMP_k
-                
+
                 self.INSTs[INST_name]['is_eval_FMD'][eval_name] = np.array(self.INSTs[INST_name]['is_eval_FMD'][eval_name])
                 self.INSTs[INST_name]['eval_fmds'][eval_name] = np.array(self.INSTs[INST_name]['eval_fmds'][eval_name])
 
@@ -941,9 +1001,9 @@ class FMD():
                 if FN_eval_name + TN_eval_name > 0:
                     self.INSTs[INST_name]['NPV'][eval_name] = TN_eval_name / (FN_eval_name + TN_eval_name)
                     self.INSTs[INST_name]['FOR'][eval_name] = FN_eval_name / (FN_eval_name + TN_eval_name)
-        
-        # * 4. TPRs, TNRs, AUC 구하기
-        self.set_TPRs_TNRs_AUC()
+
+        # * 4. fmdcs_infos 구하기
+        self.set_fmdcs_infos()
 
     def set_square_NPs_infos(self, figsize=None, column=None):
         if figsize!=None:
@@ -992,7 +1052,7 @@ class FMD():
             ith_element_count = 1
             for ith_shape_ele in nps[ith].shape:
                 ith_element_count *= ith_shape_ele
-            
+
             element_count.append(ith_element_count)
 
         # 레이어 원소 개수로 정방 이차 배열의 한 변의 길이 구함
@@ -1075,7 +1135,7 @@ class FMD():
             self.set_square_NPs_infos([20,10])
         # * eval_U 이차 정방 행렬로 출력
         self.show_square_NPs(eval_U, eval_U_name, color_map=False)
-        
+
     def show_FM_repres(self, INST_name=None):
         # * 1. 이 show 메소드를 실행하는 범주 출력
         root_dir_splited = self.root_dir.split('/')
@@ -1089,7 +1149,7 @@ class FMD():
 
         # * 2. FM_repres 출력
         self.set_square_NPs_infos([60,60],column=7)
-        # * 특정 INST가 없다면 모든 HP들을 출력하고, 특정 INST가 있다면 그 HP만 출력한다. 
+        # * 특정 INST가 없다면 모든 HP들을 출력하고, 특정 INST가 있다면 그 HP만 출력한다.
         if INST_name == None:
             FM_repre_HPs = ['FM_min', 'FM_mean', 'FM_max']
         else:
@@ -1378,7 +1438,7 @@ class FMD():
         # * 2. fmdc_infos 출력
         # rvalid_fmds, wvalid_fmds 출력
         self.show_rvalid_fmds_wvalid_fmds(INST_name, show_category=False, show_HP_fmdcs=False)
-        
+
         # fmdc_HP, fmdc 출력
         print(f"fmdc_HP, fmdc:\t{self.INSTs[INST_name]['fmdc_HP']}:\t{self.INSTs[INST_name]['fmdc']: 0.4f}")
         # HP_fmdcs 출력하기
@@ -1493,6 +1553,27 @@ class FMD():
         eval_FMD_size = len(self.eval_U[eval_name][self.INSTs[INST_name]['is_eval_FMD'][eval_name]])
         print(f"[FMD ratio(|eval_FMD|/|eval_U|)]:\t{eval_FMD_size/eval_U_size: 0.4f}")
 
+    def show_eval_U_predicted_matched(self, INST_name, eval_name, show_category=True):
+        if show_category == True:
+            # * 1. 이 show 메소드를 실행하는 범주 출력
+            root_dir_splited = self.root_dir.split('/')
+            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
+            print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
+            print()
+        # * 2. eval_U, eval_U_predicted, eval_U_matched 그래프 그리기
+        # eval_U: 실제 정분류, 오분류 그래프, eval_U_predicted: 예측한 정분류, 오분류 그래프
+        # eval_U_matched: 실제와 예측한 값이 같다면 True, 아니라면 False
+        self.set_square_NPs_infos([20,10])
+        eval_U = self.eval_U[eval_name]; eval_U_predicted = np.logical_not(self.INSTs[INST_name]['is_eval_FMD'][eval_name])
+        eval_U_matched = np.logical_not(np.logical_xor(eval_U, eval_U_predicted))
+        self.show_square_NPs([eval_U, eval_U_predicted, eval_U_matched], ['eval_U', 'eval_U_predicted', 'eval_U_matched'])
+        # * 3. accuracy 출력하기
+        # TP, FN, TN, FP 초기화
+        TP = self.INSTs[INST_name]['TP'][eval_name]; FN = self.INSTs[INST_name]['FN'][eval_name]; TN = self.INSTs[INST_name]['TN'][eval_name]; FP = self.INSTs[INST_name]['FP'][eval_name]
+        accuracy = (TP + TN) / (TP + FN + TN + FP)
+        print(f"accuracy:\t{accuracy}")
+
     def show_eval_fmd_right_ratio(self, INST_name, eval_name, show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
@@ -1525,12 +1606,12 @@ class FMD():
             else:
                 upper_than_interval_min = eval_fmds >= interval_min
                 lower_than_interval_max = eval_fmds <= interval_max
-            
+
             # eval_U에서 interval_value에 해당하는 마커를 찾음
             interval_values_maker = np.logical_and(upper_than_interval_min, lower_than_interval_max)
             is_right_interval_values = self.eval_U[eval_name][interval_values_maker]
             R = len(np.nonzero(is_right_interval_values)[0]); W = len(is_right_interval_values) - R
-            
+
             # interval에 아무것도 없다면 right_ratio_value에 -1을 할당
             if R+W == 0:
                 right_ratio_value = -1
@@ -1539,7 +1620,7 @@ class FMD():
 
             eval_fmd.append(eval_fmd_value)
             right_ratio.append(right_ratio_value)
-        
+
         ones = np.ones(eval_fmd_slice)
         plt.scatter(x=eval_fmd, y=right_ratio, s=ones)
 
@@ -1642,6 +1723,53 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: .4f}")
 
+    def show_efficiency(self, INST_name, eval_name, show_category=True):
+        if show_category == True:
+            # * 1. 이 show 메소드를 실행하는 범주 출력
+            root_dir_splited = self.root_dir.split('/')
+            data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+            # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
+            print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
+            print()
+    
+        root_dir_splited = self.root_dir.split('/'); class_name = root_dir_splited[-1]
+        bar_width = 0.35
+        alpha = 0.5
+        index = np.array([0])
+        label = [f'{class_name}']
+        p1 = plt.bar(index - (bar_width)/2, self.INSTs[INST_name]['N'][eval_name], bar_width, color='blue', alpha=alpha, label='U efficiency')
+        p2 = plt.bar(index + (bar_width)/2, self.INSTs[INST_name]['NPV'][eval_name], bar_width, color='orange', alpha=alpha, label='FMD efficiency')
+        
+        plt.ylabel('Efficiency')
+        plt.ylim(-0.1, 1.1)
+        plt.xlabel('class')
+        plt.xticks(index, label)
+        plt.xlim(index.min()-1, index.max()+1)
+        plt.legend((p1[0], p2[0]), ('U efficiency', 'FMD efficiency'))
+        plt.show()
+
+    def show_eval_infos(self, INST_name, eval_name):
+        # * 1. 이 show 메소드를 실행하는 범주 출력
+        root_dir_splited = self.root_dir.split('/')
+        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
+        # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
+        print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
+        print()
+
+        # * 2. eval_infos 출력
+        # eval 벤 다이어그램 그리기
+        self.show_eval_venn_diagram(INST_name, eval_name, show_category=False)
+        # 효과성 및 FMD 비율 그리기
+        self.show_efficience_and_FMD_ratio(INST_name, eval_name, show_category=False)
+        # eval_U, eval_U_predicted, eval_U_matched 출력
+        self.show_eval_U_predicted_matched(INST_name, eval_name, show_category=False)
+        # eval_fmd-정분류 비율 그래프 그리기
+        self.show_eval_fmd_right_ratio(INST_name, eval_name, show_category=False)
+        # rvalid_fmds, wvalid_fmds, eval_fmds, reval_fmds, weval_fmds 출력
+        self.show_fmds(INST_name, eval_name, show_category=False)
+        # show_efficiency 출력
+        self.show_efficiency(INST_name, eval_name, show_category=False)
+
     def show_fmdc_TNR_TPR(self, INST_name, eval_name, show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
@@ -1652,8 +1780,8 @@ class FMD():
             print()
 
         # * 2. fmdc_TNR_TPR 그래프 그리기
-        plt.plot(self.INSTs[INST_name]['fmdcs'][eval_name], self.INSTs[INST_name]['TPRs'][eval_name], 'bo', label='TPR')
-        plt.plot(self.INSTs[INST_name]['fmdcs'][eval_name], self.INSTs[INST_name]['TNRs'][eval_name], 'ro', label='TNR')
+        plt.plot(self.INSTs[INST_name]['fmdcs'][eval_name], self.INSTs[INST_name]['TPR_fmdc'][eval_name], 'bo', label='TPR')
+        plt.plot(self.INSTs[INST_name]['fmdcs'][eval_name], self.INSTs[INST_name]['TNR_fmdc'][eval_name], 'ro', label='TNR')
 
         # * 3. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
         # * 3.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
@@ -1671,7 +1799,7 @@ class FMD():
         eval_fmds = self.INSTs[INST_name]['eval_fmds'][eval_name]
         reval_fmds = eval_fmds[self.eval_U[eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
         weval_fmds = eval_fmds[np.logical_not(self.eval_U[eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
-        
+
         # * 3.2. 실선 그리기
         for value, name in value_names:
             if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
@@ -1707,9 +1835,9 @@ class FMD():
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
-        
+
         # * 2. ROC, AUC 그리기
-        TPRs = self.INSTs[INST_name]['TPRs'][eval_name]; TNRs = self.INSTs[INST_name]['TNRs'][eval_name]; AUC = self.INSTs[INST_name]['AUC'][eval_name]
+        TPRs = self.INSTs[INST_name]['TPR_fmdc'][eval_name]; TNRs = self.INSTs[INST_name]['TNR_fmdc'][eval_name]; AUC = self.INSTs[INST_name]['AUC'][eval_name]
         # ROC 그리기
         plt.title('ROC curve')
         plt.plot(1 - TNRs, TPRs)
@@ -1726,8 +1854,8 @@ class FMD():
         plt.show()
 
         print(f'AUC: {AUC: 0.4f}')
-
-    def show_eval_U_predicted_matched(self, INST_name, eval_name, show_category=True):
+    
+    def show_CM_info_fmdc(self, INST_name, eval_name, show_category=True):
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             root_dir_splited = self.root_dir.split('/')
@@ -1735,90 +1863,115 @@ class FMD():
             # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
             print()
-        # * 2. eval_U, eval_U_predicted, eval_U_matched 그래프 그리기
-        # eval_U: 실제 정분류, 오분류 그래프, eval_U_predicted: 예측한 정분류, 오분류 그래프
-        # eval_U_matched: 실제와 예측한 값이 같다면 True, 아니라면 False
-        self.set_square_NPs_infos([20,10])
-        eval_U = self.eval_U[eval_name]; eval_U_predicted = np.logical_not(self.INSTs[INST_name]['is_eval_FMD'][eval_name])
-        eval_U_matched = np.logical_not(np.logical_xor(eval_U, eval_U_predicted))
-        self.show_square_NPs([eval_U, eval_U_predicted, eval_U_matched], ['eval_U', 'eval_U_predicted', 'eval_U_matched'])
 
-    def show_eval_infos(self, INST_name, eval_name):
-        # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
-        # * 특정 INST가 있으니 데이터셋, 클래스, INST_name을 출력한다.
-        print(f'[{data_set_name}, {class_name}, [{INST_name}], {eval_name}]')
-        print()
+        # * 2. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
+        # HP_fmdcs의 값과 이름을 모두 넣음
+        value_names = []; HP_fmdcs = self.INSTs[INST_name]['HP_fmdcs']
+        fmdc_HP = self.INSTs[INST_name]['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                value_names.append([HP_fmdcs[key], key+'(fmdc)'])
+            else:
+                value_names.append([HP_fmdcs[key], key])
 
-        # * 2. eval_infos 출력
-        # eval 벤 다이어그램 그리기
-        self.show_eval_venn_diagram(INST_name, eval_name, show_category=False)
-        # 효과성 및 FMD 비율 그리기
-        self.show_efficience_and_FMD_ratio(INST_name, eval_name, show_category=False)
-        # eval_fmd-정분류 비율 그래프 그리기
-        self.show_eval_fmd_right_ratio(INST_name, eval_name, show_category=False)
-        # rvalid_fmds, wvalid_fmds, eval_fmds, reval_fmds, weval_fmds 출력
-        self.show_fmds(INST_name, eval_name, show_category=False)
+        # weval_fmds.min(), reval_fmds.max()에 대한 값과 이을 모두 value_names에 넣음
+        # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
+        eval_fmds = self.INSTs[INST_name]['eval_fmds'][eval_name]
+        reval_fmds = eval_fmds[self.eval_U[eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+        weval_fmds = eval_fmds[np.logical_not(self.eval_U[eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+
+        # * 2. fmdc_CM_info_fmdc 그래프 그리기
+        fmdcs = self.INSTs[INST_name]['fmdcs'][eval_name]
+        
+        plt.figure(figsize=(7,4))
+        # 'P', 'N', 'TP', 'FN', 'TN', 'FP' 그리기
+        CM_info_names = ['P', 'N', 'TP', 'FN', 'TN', 'FP']
+        for CM_info_name in CM_info_names:
+            if CM_info_name == 'P' or CM_info_name == 'N':
+                plt.plot(fmdcs, self.INSTs[INST_name][f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_name}'
+                        , linestyle='--', linewidth=4, alpha=0.4)
+            else:
+                plt.plot(fmdcs, self.INSTs[INST_name][f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_name}')
+        # 실선 그리기 
+        for value, name in value_names:
+            if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+            elif name ==  fmdc_HP + '(fmdc)':
+                plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+            else:
+                plt.plot([value, value], [0, 1], label=name)
+
+        plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left', ncol=1)
+        plt.xticks(fontsize = 14)
+        plt.yticks(fontsize = 14)
+        plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+        plt.ylabel('TP, FN, TN, FP', {'size': '16'})
+        plt.ylim(-0.1, 1.1)
+        plt.show()
+        
+        # 'TPR', 'TNR', 'FNR', 'FPR' 그리기
+        CM_info_names = ['TPR', 'TNR', 'FNR', 'FPR']
+        for CM_info_name in CM_info_names:
+            plt.plot(fmdcs, self.INSTs[INST_name][f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_name}')
+        # 실선 그리기
+        for value, name in value_names:
+            if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+            elif name ==  fmdc_HP + '(fmdc)':
+                plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+            else:
+                plt.plot([value, value], [0, 1], label=name)
+                
+        plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left', ncol=1)
+        plt.xticks(fontsize = 14)
+        plt.yticks(fontsize = 14)
+        plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+        plt.ylabel('TPR , TNR, FNR, FPR', {'size': '16'})
+        plt.ylim(-0.1, 1.1)
+        plt.show()
+        
+        # 'P', 'N', 'PPV', 'NPV', 'FDR', 'FOR' 그리기
+        CM_info_names = ['P', 'N', 'PPV', 'NPV' , 'FDR', 'FOR']
+        CM_info_labels = ['P(U right ratio)', 'N(U wrong ratio, U efficiency)', 'PPV', 'NPV(FMD wrong ratio, FMD efficiency)' , 'FDR', 'FOR(FMD right ratio)']
+        for i, CM_info_name in enumerate(CM_info_names):
+            if CM_info_name == 'P' or CM_info_name == 'N':
+                plt.plot(fmdcs, self.INSTs[INST_name][f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_labels[i]}'
+                        , linestyle='--', linewidth=4)
+            elif CM_info_name == 'N' or CM_info_name == 'NPV':
+                plt.plot(fmdcs, self.INSTs[INST_name][f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_labels[i]}', linewidth=4)
+            else:
+                plt.plot(fmdcs, self.INSTs[INST_name][f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_labels[i]}')
+        # 실선 그리기
+        for value, name in value_names:
+            if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+            elif name ==  fmdc_HP + '(fmdc)':
+                plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+            else:
+                plt.plot([value, value], [0, 1], label=name)
+                
+        plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left', ncol=1)
+        plt.xticks(fontsize = 14)
+        plt.yticks(fontsize = 14)
+        plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+        plt.ylabel('PPV, NPV , FDR, FOR', {'size': '16'})
+        plt.ylim(-0.1, 1.1)
+        plt.show()
+
+        # * 4. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 값 출력하기
+        for value, name in value_names:
+            if name == 'rvalid_fmds_max_wvalid_fmds_min_average' or\
+               name == 'rvalid_fmds_max_wvalid_fmds_min_average(fmdc)':
+                print(f"{name}:\t{value: 0.4f}")
+            elif name.split('_')[-1] == 'average(fmdc)' or name.split('_')[-1] == 'middle(fmdc)':
+                    print(f"{name}:\t\t\t{value: 0.4f}")
+            else:
+                print(f"{name}:\t\t\t\t{value: 0.4f}")
+
+    def show_fmdcs_infos(self, INST_name, eval_name):
         # fmdc_TNR_TPR 그래프 그리기
         self.show_fmdc_TNR_TPR(INST_name, eval_name, show_category=False)
         # show_roc_curve 그래프 그리기
         self.show_roc_curve(INST_name, eval_name, show_category=False)
-        # eval_U, eval_U_predicted, eval_U_matched 출력
-        self.show_eval_U_predicted_matched(INST_name, eval_name, show_category=False)
-
-    def show_all(self, show_all_mask):
-        # * 1. 이 show 메소드를 실행하는 범주 출력
-        root_dir_splited = self.root_dir.split('/')
-        data_set_name = root_dir_splited[-2]; class_name = root_dir_splited[-1]
-        print(f'[{data_set_name}, {class_name}]')
-        print()
-
-        if show_all_mask['show_dir_infos']:
-            print('show_dir_infos()'); self.show_dir_infos()
-
-        if show_all_mask['show_data_infos']:
-            print('show_data_infos()'); self.show_data_infos()
-
-        if show_all_mask['show_HP']:
-            print('show_HP()'); self.show_HP()
-
-        if show_all_mask['show_FM_repres']:
-            self.set_square_NPs_infos(figsize=[60,60], column=7)
-            print('show_FM_repres()'); self.show_FM_repres()
-
-        if show_all_mask['show_AMs_and_related']:
-            self.set_square_NPs_infos(figsize=[60,60], column=7)
-            print('show_AMs_and_related()'); self.show_AMs_and_related()
-
-        if show_all_mask['show_layer_infos']:
-            print('show_layer_infos()'); self.show_layer_infos()
-
-        if show_all_mask['show_fmds_as_box_plot']:
-            print('show_fmds_as_box_plot()'); self.show_rvalid_fmds_and_wvalid_fmds()
-
-        if show_all_mask['show_fmdc_infos']:
-            print('show_fmdc_infos()'); self.show_fmdc_infos()
-
-        if show_all_mask['show_eval_infos']:
-            print('show_eval_infos()'); self.show_eval_infos()
-
-        if show_all_mask['show_fmd_right_ratio_graph']:
-            print('show_fmd_right_ratio_graph()'); self.show_fmd_right_ratio_graph()
-
-        if show_all_mask['show_eval_venn_diagrams']:
-            print('show_eval_venn_diagrams()'); self.show_eval_venn_diagrams()
-
-        if show_all_mask['show_efficience_and_FMD_ratio']:
-            print('show_efficience_and_FMD_ratio()'); self.show_efficience_and_FMD_ratio()
-
-    def save(self, model_name):
-        # os.system(f'touch ./instances/{model_name}.pickle')
-        # 인자로 지정된 경로와 이름으로 파일 저장
-        with open(f"{self.root_dir}/instances/{model_name}.pickle", "wb") as f:
-            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-
-    def load(self, model_name):
-        # 인자로 지정된 경로와 이름으로 파일 불러오기
-        with open(f"{self.root_dir}/instances/{model_name}.pickle", "rb" ) as f:
-            return copy.deepcopy(pickle.load(f))
+        # show_CM_info_fmdc 그래프 그리기
+        self.show_CM_info_fmdc(INST_name, eval_name, show_category=False)
