@@ -1718,18 +1718,10 @@ class FMD():
         B = np.array([(x*y).sum(), y.sum()]).T
         c = np.linalg.inv(A)@B; a = c[0]; b = c[1]
 
-        # line의 최소값과 최대값에 해당하는 x값 구하기
-        x_line_min = (y.min()-b) / a; x_line_max = (y.max()-b) / a
-        # line의 최소값과 최대값에 해당하는 x값 중 작은 것은 x_min, 큰 것은 x_max으로 할당
-        x_min = 0; x_max = 0
-        if x_line_min < x_line_max:
-            x_min = x_line_min; x_max = x_line_max
-        else:
-            x_min = x_line_max; x_max = x_line_min
         # 최소제곱법 1차 함수 그리기
-        plt.plot([x_line_min, x_line_max], [a*x_line_min+b, a*x_line_max+b])
+        plt.plot([x.min(), x.max()], [a*x.min()+b, a*x.max()+b])
         # line의 1/2 지점에 기울기 표시하기
-        plt.text(x=(x_min + x_max)/2, y=(a*x_min+b + a*x_max+b)/2, s=f'slope = {a: 0.4f}')
+        plt.text(x=(x.min() + x.max())/2, y=(a*x.min()+b + a*x.max()+b)/2, s=f'slope = {a: 0.4f}')
 
         # * 4. 피어슨 상관 계수 표시하기
         x_mean = x.mean(); y_mean = y.mean() # x, y 평균 구하기
@@ -1738,7 +1730,7 @@ class FMD():
         std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
         r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
         # line의 1/3 지점에 피어슨 상관 계수 표시하기
-        plt.text(x=(x_min * 2/3 + x_max * 1/3), y=((a*x_min+b)*2/3 + (a*x_max+b)*1/3), s=f'pearson correlation coefficient  = {r: 0.4f}')
+        plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=((a*x.min()+b)*2/3 + (a*x.max()+b)*1/3), s=f'pearson correlation coefficient  = {r: 0.4f}')
 
         plt.xticks(fontsize = 16)
         plt.xlabel('feature map distance', {'size': '16'})
@@ -2065,8 +2057,327 @@ class FMD():
         # show_CM_info_fmdc 그래프 그리기
         self.show_CM_info_fmdc(metric_name, eval_name, show_category=False)
     
-    def show_all_roc_curve(self, class_dirs, metric_name):
-        pass
+    def show_all_eval_venn_diagram(self, class_dirs, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+        def show_eval_venn_diagram(subplot_index, class_dir, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+            # * 1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb")
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb")
+            class_infos = pickle.load(class_infos_file)
+            metric = pickle.load(metric_file)
+            class_infos_file.close()
+            metric_file.close()
+            
+            # * 2. eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', position=(0.5, 1.0+0.1), fontdict={'size': '32'})
+            
+            # * 3. 벤 다이어그램 그리기
+            # eval_U, 직사각형
+            box_left = np.array([[-100, i] for i in range(-50, 50+1)])
+            box_right = np.array([[100, i] for i in range(-50, 50+1)])
+            box_top = np.array([[i, 50] for i in range(-99, 99+1)])
+            box_bottom = np.array([[i, -50] for i in range(-99, 99+1)])
+
+            box = np.append(box_left, box_right, axis=0)
+            box = np.append(box, box_top, axis=0)
+            box = np.append(box, box_bottom, axis=0)
+            box = box.T
+
+            box_x = box[0]
+            box_y = box[1]
+
+            plt.plot(box_x, box_y, 'go')
+            # eval_FMD, 타원
+            ellipse = [[-75,0]]
+            x_range = [-75 + i*(75*2/999) for i in range(999+1)]
+            for i in x_range:
+                ellipse.append([i,  np.sqrt((30**2)*(1-(i**2)/(75**2)))])
+            ellipse.append([75,0])
+            for i in x_range:
+                ellipse.append([i, -np.sqrt((30**2)*(1-(i**2)/(75**2)))])
+            ellipse = np.array(ellipse)
+            ellipse = ellipse.T
+
+            ellipse_x = ellipse[0]
+            ellipse_y = ellipse[1]
+
+            plt.plot(ellipse_x, ellipse_y, 'ko')
+            # 정분류, 직사각형
+            box_left = np.array([[-97, i] for i in range(-48, 48+1)])
+            box_right = np.array([[-2, i] for i in range(-48, 48+1)])
+            box_top = np.array([[i, 48] for i in range(-97+1, -2-1+1)])
+            box_bottom = np.array([[i, -48] for i in range(-97+1, -2-1+1)])
+
+            box = np.append(box_left, box_right, axis=0)
+            box = np.append(box, box_top, axis=0)
+            box = np.append(box, box_bottom, axis=0)
+            box = box.T
+
+            box_x = box[0]
+            box_y = box[1]
+
+            plt.plot(box_x, box_y, 'bo')
+            # 오분류, 직사각형
+            box_left = np.array([[2, i] for i in range(-48, 48+1)])
+            box_right = np.array([[97, i] for i in range(-48, 48+1)])
+            box_top = np.array([[i, 48] for i in range(2+1, 97-1+1)])
+            box_bottom = np.array([[i, -48] for i in range(2+1, 97-1+1)])
+
+            box = np.append(box_left, box_right, axis=0)
+            box = np.append(box, box_top, axis=0)
+            box = np.append(box, box_bottom, axis=0)
+            box = box.T
+
+            box_x = box[0]
+            box_y = box[1]
+            # * 4. 벤 다이어그램에 적절한 텍스트(eval_U, eval_FMD, Wrong, Right)와 수치(TP, FN, TN, FP) 넣기
+            plt.plot(box_x, box_y, 'ro')
+            # 집합 표시를 위한 텍스트 넣기
+            plt.text(x=69, y=40, s="eval_U", fontdict={'color': 'green','size': 16})
+            plt.text(x=9, y=20, s="eval_FMD", fontdict={'color': 'black','size': 16})
+            plt.text(x=50, y=52, s="Wrong", fontdict={'color': 'red','size': 16})
+            plt.text(x=-50, y=52, s="Right", fontdict={'color': 'blue','size': 16})
+            # TP, FN, TN, FP 에 대한 숫자 넣기
+            plt.text(x=-75, y=40, s=f"TP: {metric['TP'][eval_name]}", fontdict={'color': 'purple','size': 16})
+            plt.text(x=-50, y=0, s=f"FN: {metric['FN'][eval_name]}", fontdict={'color': 'purple','size': 16})
+            plt.text(x=25, y=0, s=f"TN: {metric['TN'][eval_name]}", fontdict={'color': 'purple','size': 16})
+            plt.text(x=25, y=40, s=f"FP: {metric['FP'][eval_name]}", fontdict={'color': 'purple','size': 16})
+
+            plt.axis('off')
+            
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=(48,48))
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)%column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_venn_diagram(subplot_index=subplot_index, class_dir=class_dir, metric_name=metric_name, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_eval_fmd_right_ratio(self, class_dirs, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+        def show_eval_fmd_right_ratio(subplot_index, class_dir, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+            # * 1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb")
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb")
+            class_infos = pickle.load(class_infos_file)
+            metric = pickle.load(metric_file)
+            class_infos_file.close()
+            metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            # eval_fmd는 그래프에서 x축에 해당하는 부분, right_ratio는 그래프에서 y축에 해당하는 부분
+            eval_fmd = []; right_ratio = []
+            eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
+            eval_fmd_min = eval_fmds.min(); eval_fmd_max = eval_fmds.max() # eval_fmds 최소값, 최대값 찾음.
+            eval_fmd_slice = (class_infos['eval_K'][eval_name] // 10) + 1
+            eval_fmd_interval_length = (eval_fmd_max - eval_fmd_min) / eval_fmd_slice
+
+            # 각 interval을 순회하며 eval_fmd_value(interval의 중앙값)과 right_ratio을 구함
+            for interval_offset in range(eval_fmd_slice):
+                # 각 interval의 중앙값으로 eval_fmd에 할당
+                interval_min = eval_fmd_min + interval_offset*eval_fmd_interval_length; interval_max = eval_fmd_min + (interval_offset+1)*eval_fmd_interval_length
+                eval_fmd_value = (interval_min + interval_max) / 2
+                # 각 interval의 정분류 비율을 RR에 할당
+                upper_than_interval_min = 0
+                lower_than_interval_max = 0
+                if interval_offset != eval_fmd_slice-1:
+                    upper_than_interval_min = eval_fmds >= interval_min
+                    lower_than_interval_max = eval_fmds < interval_max
+                else:
+                    upper_than_interval_min = eval_fmds >= interval_min
+                    lower_than_interval_max = eval_fmds <= interval_max
+
+                # eval_U에서 interval_value에 해당하는 마커를 찾음
+                interval_values_maker = np.logical_and(upper_than_interval_min, lower_than_interval_max)
+                is_right_interval_values = class_infos['eval_U'][eval_name][interval_values_maker]
+                R = len(np.nonzero(is_right_interval_values)[0]); W = len(is_right_interval_values) - R
+
+                # interval에 아무것도 없다면 right_ratio_value에 -1을 할당
+                if R+W == 0:
+                    right_ratio_value = -1
+                else:
+                    right_ratio_value = R / (R + W)
+
+                eval_fmd.append(eval_fmd_value)
+                right_ratio.append(right_ratio_value)
+
+            ones = np.ones(eval_fmd_slice)
+            plt.scatter(x=eval_fmd, y=right_ratio, s=ones)
+
+            # * 3. 최소제곱법을 이용해서 그래프에 가까운 1차함수 그리고 기울기 표시하기
+            # eval_fmd, right_ratio를 모두 넘파이 배열로 바꾸기
+            eval_fmd = np.array(eval_fmd); right_ratio = np.array(right_ratio)
+            # 음이 아닌 eval_fmd, right_ratio로 각각 x, y를 고름
+            right_ratio_non_negative_mask = right_ratio >= 0
+            y = right_ratio[right_ratio_non_negative_mask]
+            x = eval_fmd[right_ratio_non_negative_mask]
+            # Ac = B, c = [a, b], a는 1차 함수 기울기, b는 1차 함수 y절편
+            A = np.array([[(x**2).sum(), x.sum()],
+                        [x.sum(), len(x)]])
+            B = np.array([(x*y).sum(), y.sum()]).T
+            c = np.linalg.inv(A)@B; a = c[0]; b = c[1]
+            
+            # 최소제곱법 1차 함수 그리기
+            plt.plot([x.min(), x.max()], [a*x.min()+b, a*x.max()+b])
+            # line의 1/2 지점에 기울기 표시하기
+            plt.text(x=(x.min() + x.max())/2, y=(a*x.min()+b + a*x.max()+b)/2, s=f'slope = {a: 0.4f}', fontdict={'size': 14})
+
+            # * 4. 피어슨 상관 계수 표시하기
+            x_mean = x.mean(); y_mean = y.mean() # x, y 평균 구하기
+            cov =  ((x - x_mean)*(y - y_mean)).sum() / (len(x) - 1)  # x, y 공분산 구하기, len(x) 대신 len(x)-1로
+            std_x = np.power(((x - x_mean)**2).sum()/(len(x) - 1), 1/2) # x 표준편차 구하기
+            std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
+            r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
+            # line의 1/3 지점에 피어슨 상관 계수 표시하기
+            plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=((a*x.min()+b)*2/3 + (a*x.max()+b)*1/3), s=f'pearson correlation coefficient  = {r: 0.4f}', fontdict={'size': 14})
+
+            plt.xticks(fontsize = 16)
+            plt.xlabel('feature map distance', {'size': '16'})
+            plt.xlim(x.min(), x.max()) # interval에 아무것도 없는 것은 표기하지 않음
+            plt.yticks(fontsize = 16)
+            plt.ylabel('right ratio', {'size': '16'})
+            plt.ylim(-0.1, 1.1) # interval에 아무것도 없는 것은 표기하지 않음
+        
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,48])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)%column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_fmd_right_ratio(subplot_index=subplot_index, class_dir=class_dir, metric_name=metric_name, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_fmds(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+        def show_fmds(subplot_index, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+            # * 1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb")
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb")
+            class_infos = pickle.load(class_infos_file)
+            metric = pickle.load(metric_file)
+            class_infos_file.close()
+            metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            # * 2. fmds 그래프 그리기
+            eval_fmds = self.metrics[metric_name]['eval_fmds'][eval_name]
+            # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
+            reval_fmds = eval_fmds[self.eval_U[eval_name]]; weval_fmds = eval_fmds[np.logical_not(self.eval_U[eval_name])]
+            plt.boxplot([self.metrics[metric_name]['rvalid_fmds'], self.metrics[metric_name]['wvalid_fmds'], eval_fmds, reval_fmds, weval_fmds], notch=True)
+            plt.xticks([1, 2, 3, 4, 5], ['rvalid_fmds', 'wvalid_fmds', 'eval_fmds', 'reval_fmds', 'weval_fmds'])
+
+            # * 3. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
+            # * 4.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
+            # HP_fmdcs의 값과 이름을 모두 value_names에 저장함
+            HP_fmdcs = self.metrics[metric_name]['HP_fmdcs']; value_names=[]
+            fmdc_HP = self.metrics[metric_name]['fmdc_HP']
+            for key in HP_fmdcs.keys():
+                if key == fmdc_HP:
+                    value_names.append([HP_fmdcs[key], key + '(fmdc)'])
+                else:
+                    value_names.append([HP_fmdcs[key], key])
+            # weval_fmds.min(), reval_fmds.max()의 값과 이름을 모두 value_names에 저장함
+            reval_fmds = eval_fmds[self.eval_U[eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+            weval_fmds = eval_fmds[np.logical_not(self.eval_U[eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+
+            # * 3.2. 실선 그리기
+            # value_names로 HP_fmdcs의 값과 이름을 fmds를 가로질러 표시함
+            for value, name in value_names:
+                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                    plt.plot([1, 5], [value, value], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                elif name == fmdc_HP + '(fmdc)':
+                    plt.plot([1, 5], [value, value], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot([1, 5], [value, value], label=name)
+            # legend로 값의 label 표시
+            plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left', ncol=1)
+
+            plt.xticks(fontsize = 10)
+            plt.yticks(fontsize = 14)
+            plt.ylabel('feature map distance', {'size': '16'})
+            plt.show()
+
+            # * 4. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 값 출력하기
+            for value, name in value_names:
+                if name == 'rvalid_fmds_max_wvalid_fmds_min_average' or\
+                name == 'rvalid_fmds_max_wvalid_fmds_min_average(fmdc)':
+                    print(f"{name}:\t{value: .4f}")
+                elif name.split('_')[-1] == 'average(fmdc)' or name.split('_')[-1] == 'middle(fmdc)':
+                        print(f"{name}:\t\t\t{value: .4f}")
+                else:
+                    print(f"{name}:\t\t\t\t{value: .4f}")
+                    
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,48])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)%column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_fmd_right_ratio(subplot_index=subplot_index, class_dir=class_dir, metric_name=metric_name, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
     
     def predict(self):
         pass
