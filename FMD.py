@@ -1,4 +1,5 @@
 # import cupy as np # CUDA를 지원하는 컴퓨터라면 CUDA 버전에 맞게 cupy를 설치하여 cupy 임포트
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -1086,6 +1087,14 @@ class FMD():
                 with open(f"{self.class_dir}/metrics/{metric_name}.pickle", "wb") as metric_file:
                     pickle.dump(self.metrics[metric_name], metric_file)
 
+    def fit_eval(self, class_dir, FM_repre_MHP=['FM_mean'], alpha_MHP=[['rmw_max', 1000]], DAM_MHP=['all'], lfmd_MHP=['se_lfmd'], W_MHP=['C'], fmdc_MHP=['rvalid_fmds_average']):
+        self.fit(class_dir=class_dir, FM_repre_MHP=FM_repre_MHP, alpha_MHP=alpha_MHP, DAM_MHP=DAM_MHP, lfmd_MHP=lfmd_MHP, W_MHP=W_MHP, fmdc_MHP=fmdc_MHP)
+        self.eval()
+    
+    def fit_eval_all(self, class_dirs, FM_repre_MHP=['FM_mean'], alpha_MHP=[['rmw_max', 1000]], DAM_MHP=['all'], lfmd_MHP=['se_lfmd'], W_MHP=['C'], fmdc_MHP=['rvalid_fmds_average']):
+        for class_dir in class_dirs:
+            self.fit_eval(class_dir=class_dir, FM_repre_MHP=FM_repre_MHP, alpha_MHP=alpha_MHP, DAM_MHP=DAM_MHP, lfmd_MHP=lfmd_MHP, W_MHP=W_MHP, fmdc_MHP=fmdc_MHP)
+
     def set_square_NPs_infos(self, figsize=None, column=None):
         if figsize!=None:
             self.square_NPs_figsize = figsize
@@ -1217,7 +1226,9 @@ class FMD():
         # * eval_U 이차 정방 행렬로 출력
         self.show_square_NPs(eval_U, eval_U_name, color_map=False)
 
-    def show_FM_repres(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_FM_repres(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1244,7 +1255,9 @@ class FMD():
             # * FM_repre, FM_repre_name 이차 정방 행렬로 출력
             self.show_square_NPs(TFM_repre, TFM_repre_name, title_fontsize=40); self.show_square_NPs(RFM_repre, RFM_repre_name, title_fontsize=40); self.show_square_NPs(WFM_repre, WFM_repre_name, title_fontsize=40)
 
-    def show_alpha_infos(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_alpha_infos(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1369,7 +1382,9 @@ class FMD():
 
         print('-'*100)
 
-    def show_HP(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_HP(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1390,7 +1405,9 @@ class FMD():
 
         print('-'*100)
 
-    def show_AMs(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_AMs(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1409,7 +1426,9 @@ class FMD():
         # * AM_repres, AM_repre_names 이차 정방 행렬로 출력
         self.show_square_NPs(TAM, TAM_name, title_fontsize=40); self.show_square_NPs(RAM, RAM_name, title_fontsize=40); self.show_square_NPs(WAM, WAM_name, title_fontsize=40); self.show_square_NPs(DAM, DAM_name, title_fontsize=40)
 
-    def show_DAM_infos(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_DAM_infos(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1428,7 +1447,9 @@ class FMD():
         DAM=self.metrics[metric_name]['DAM'].copy(); DAM_name = ['DAM_' + str(l) + f'({DAM_error_flag[l]})' for l in range(self.L)]
         self.show_square_NPs(DAM, DAM_name, title_fontsize=40)
 
-    def show_layer_infos(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_layer_infos(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1451,7 +1472,9 @@ class FMD():
 
         print('-'*100)
 
-    def show_rvalid_fmds_wvalid_fmds(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', show_category=True, show_HP_fmdcs=True):
+    def show_rvalid_fmds_wvalid_fmds(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', show_category=True, show_HP_fmdcs=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1459,12 +1482,12 @@ class FMD():
             # * 특정 metric가 있으니 데이터셋, 클래스, metric_name을 출력한다.
             print(f'[{data_set_name}, {class_name}, [{metric_name}]]')
             print()
-
+        
         # * 2. rvalid_fmds, wvalid_fmds 그래프 그리기
         plt.boxplot([self.metrics[metric_name]['rvalid_fmds'], self.metrics[metric_name]['wvalid_fmds']], notch=True,)
         plt.xticks([1, 2], ['rvalid_fmds', 'wvalid_fmds'])
 
-        # * s3. HP_fmdcs 그리기
+        # * 3. HP_fmdcs 그리기
         # * 3.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
         HP_fmdcs = self.metrics[metric_name]['HP_fmdcs']; value_names=[]
         fmdc_HP = self.metrics[metric_name]['fmdc_HP']
@@ -1508,7 +1531,9 @@ class FMD():
                 else:
                     print(f"{name}:\t\t\t\t{value: 0.4f}")
 
-    def show_fmdc_infos(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average'):
+    def show_fmdc_infos(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1531,7 +1556,9 @@ class FMD():
             else:
                 print(f"\t\t{key}:\t\t\t\t{HP_fmdcs[key]: 0.4f}")
 
-    def show_eval_venn_diagram(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_eval_venn_diagram(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1615,7 +1642,9 @@ class FMD():
         plt.axis('off')
         plt.show()
 
-    def show_efficience_and_FMD_ratio(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_efficiency_and_FMD_ratio(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1634,7 +1663,9 @@ class FMD():
         eval_FMD_size = len(self.eval_U[eval_name][self.metrics[metric_name]['is_eval_FMD'][eval_name]])
         print(f"[FMD ratio(|eval_FMD|/|eval_U|)]:\t{eval_FMD_size/eval_U_size: 0.4f}")
 
-    def show_eval_U_predicted_matched(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_eval_U_predicted_matched(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1655,7 +1686,9 @@ class FMD():
         accuracy = (TP + TN) / (TP + FN + TN + FP)
         print(f"accuracy:\t{accuracy}")
 
-    def show_eval_fmd_right_ratio(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_eval_fmd_right_ratio(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1720,8 +1753,6 @@ class FMD():
 
         # 최소제곱법 1차 함수 그리기
         plt.plot([x.min(), x.max()], [a*x.min()+b, a*x.max()+b])
-        # line의 1/2 지점에 기울기 표시하기
-        plt.text(x=(x.min() + x.max())/2, y=(a*x.min()+b + a*x.max()+b)/2, s=f'slope = {a: 0.4f}')
 
         # * 4. 피어슨 상관 계수 표시하기
         x_mean = x.mean(); y_mean = y.mean() # x, y 평균 구하기
@@ -1730,9 +1761,8 @@ class FMD():
         std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
         r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
         # line의 1/3 지점에 피어슨 상관 계수 표시하기
-        plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=((a*x.min()+b)*2/3 + (a*x.max()+b)*1/3), s=f'pearson correlation coefficient  = {r: 0.4f}')
+        plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=1, s=f'pearson correlation coefficient  = {r: 0.4f}')
 
-        plt.xticks(fontsize = 16)
         plt.xlabel('feature map distance', {'size': '16'})
         plt.xlim(x.min(), x.max()) # interval에 아무것도 없는 것은 표기하지 않음
         plt.yticks(fontsize = 16)
@@ -1740,7 +1770,9 @@ class FMD():
         plt.ylim(-0.1, 1.1) # interval에 아무것도 없는 것은 표기하지 않음
         plt.show()
 
-    def show_fmds(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_fmds(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1797,7 +1829,9 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: .4f}")
 
-    def show_efficiency(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_efficiency(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1822,7 +1856,9 @@ class FMD():
         plt.legend((p1[0], p2[0]), ('U efficiency', 'FMD efficiency'))
         plt.show()
 
-    def show_eval_infos(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+    def show_eval_infos(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -1844,7 +1880,9 @@ class FMD():
         # show_efficiency 출력
         self.show_efficiency(metric_name, eval_name, show_category=False)
 
-    def show_fmdc_TNR_TPR(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_fmdc_TNR_TPR(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1901,7 +1939,9 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: 0.4f}")
     
-    def show_roc_curve(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_roc_curve(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -1920,7 +1960,7 @@ class FMD():
         for i in range(len(TPRs)):
             AUC_plot_x.append(1-TNRs[i]); AUC_plot_x.append(1-TNRs[i])
             AUC_plot_y.append(0); AUC_plot_y.append(TPRs[i])
-        plt.plot(AUC_plot_x, AUC_plot_y, label='AUC', color='red', alpha=0.4, linewidth=8)
+        plt.plot(AUC_plot_x, AUC_plot_y, label='AUC', color='red', alpha=0.4, linewidth=10)
 
         plt.xlabel('FPR(= 1 - TNR)')
         plt.ylabel('TPR')
@@ -1929,7 +1969,9 @@ class FMD():
 
         print(f'AUC: {AUC: 0.4f}')
     
-    def show_CM_info_fmdc(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_CM_info_fmdc(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
             # * 1. 이 show 메소드를 실행하는 범주 출력
             class_dir_splited = self.class_dir.split('/')
@@ -2042,7 +2084,9 @@ class FMD():
             else:
                 print(f"{name}:\t\t\t\t{value: 0.4f}")
 
-    def show_fmdcs_infos(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
+    def show_fmdcs_infos(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 이 show 메소드를 실행하는 범주 출력
         class_dir_splited = self.class_dir.split('/')
         data_set_name = class_dir_splited[-2]; class_name = class_dir_splited[-1]
@@ -2057,15 +2101,12 @@ class FMD():
         # show_CM_info_fmdc 그래프 그리기
         self.show_CM_info_fmdc(metric_name, eval_name, show_category=False)
     
-    def show_all_eval_venn_diagram(self, class_dirs, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
-        def show_eval_venn_diagram(subplot_index, class_dir, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
-            # * 1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
-            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb")
-            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb")
-            class_infos = pickle.load(class_infos_file)
-            metric = pickle.load(metric_file)
-            class_infos_file.close()
-            metric_file.close()
+    def show_all_eval_venn_diagram(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_eval_venn_diagram(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
             
             # * 2. eval_fmd_right_ratio 그래프 그리기
             # subplot 위치를 지정함
@@ -2147,7 +2188,8 @@ class FMD():
             plt.text(x=25, y=40, s=f"FP: {metric['FP'][eval_name]}", fontdict={'color': 'purple','size': 16})
 
             plt.axis('off')
-            
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
         is_there_all_data = True
         for i, class_dir in enumerate(class_dirs):
@@ -2163,26 +2205,229 @@ class FMD():
         
         # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
         # 한 그래프 크기 정하기
-        plt.figure(figsize=(48,48))
+        plt.figure(figsize=[48,20])
         # subplot 열과 행 정하기
         column_count = 5
-        row_count = (len(class_dirs)-1)%column_count + 1
+        row_count = (len(class_dirs)-1)//column_count + 1
         # 그래프 그리기
         for i, class_dir in enumerate(class_dirs):
             subplot_index = [row_count, column_count, i+1]
-            show_eval_venn_diagram(subplot_index=subplot_index, class_dir=class_dir, metric_name=metric_name, eval_name=eval_name)
+            show_eval_venn_diagram(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
         # 그래프 보여주기
         plt.show()
     
-    def show_all_eval_fmd_right_ratio(self, class_dirs, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
-        def show_eval_fmd_right_ratio(subplot_index, class_dir, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
-            # * 1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
-            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb")
-            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb")
-            class_infos = pickle.load(class_infos_file)
-            metric = pickle.load(metric_file)
-            class_infos_file.close()
-            metric_file.close()
+    def show_all_eval_U(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_eval_U(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2. eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', position=(0.5, 1.0+0.1))
+            
+            eval_U = class_infos['eval_U'][eval_name]
+            # 레이어 개수 만큼 레이어 원소 개수 계산
+            element_count = 1
+            for shape_ele in eval_U.shape:
+                element_count *= shape_ele
+
+            # 레이어 원소 개수로 정방 이차 배열의 한 변의 길이 구함
+            square_NPs_side=(math.ceil(math.sqrt((element_count))))
+
+            # 레이어 피처 맵을 평탄화함.
+            eval_U_flatten=eval_U.flatten()
+
+            # x,y로 eval_U를 그리기 위한 이차 정방 배열 좌표를 만듦
+            x=[]; y=[]
+            for y_ in range(square_NPs_side):
+                for x_ in range(square_NPs_side):
+                    x.append(x_)
+                    y.append(y_)
+            
+            # x, y를 eval_U 개수 만큼 자름
+            x = x[:element_count]; y = y[:element_count]
+            # eval_U_predicted 그래프 그림
+            plt.scatter(x=x, y=y, c=eval_U_flatten, cmap='jet')
+            plt.axis('off')
+            
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[10,4])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_U(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_eval_U_predicted(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_eval_U_predicted(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2. eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', position=(0.5, 1.0+0.1))
+            
+            eval_U = class_infos['eval_U'][eval_name]
+            eval_U_predicted = np.logical_not(metric['is_eval_FMD'][eval_name])
+            # 레이어 개수 만큼 레이어 원소 개수 계산
+            element_count = 1
+            for shape_ele in eval_U_predicted.shape:
+                element_count *= shape_ele
+
+            # 레이어 원소 개수로 정방 이차 배열의 한 변의 길이 구함
+            square_NPs_side=(math.ceil(math.sqrt((element_count))))
+
+            # 레이어 피처 맵을 평탄화함.
+            eval_U_predicted_flatten=eval_U_predicted.flatten()
+
+            # x,y로 eval_U_predicted를 그리기 위한 이차 정방 배열 좌표를 만듦
+            x=[]; y=[]
+            for y_ in range(square_NPs_side):
+                for x_ in range(square_NPs_side):
+                    x.append(x_)
+                    y.append(y_)
+            
+            # x, y를 eval_U_predicted 개수 만큼 자름
+            x = x[:element_count]; y = y[:element_count]
+            # eval_U_predicted 그래프 그림
+            plt.scatter(x=x, y=y, c=eval_U_predicted_flatten, cmap='jet')
+            plt.axis('off')
+            
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[10,4])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_U_predicted(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_eval_U_matched(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_eval_U_matched(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2. eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', position=(0.5, 1.0+0.1))
+            
+            eval_U = class_infos['eval_U'][eval_name]
+            eval_U_predicted = np.logical_not(metric['is_eval_FMD'][eval_name])
+            eval_U_matched = np.logical_not(np.logical_xor(eval_U, eval_U_predicted))
+            # 레이어 개수 만큼 레이어 원소 개수 계산
+            element_count = 1
+            for shape_ele in eval_U_matched.shape:
+                element_count *= shape_ele
+
+            # 레이어 원소 개수로 정방 이차 배열의 한 변의 길이 구함
+            square_NPs_side=(math.ceil(math.sqrt((element_count))))
+
+            # 레이어 피처 맵을 평탄화함.
+            eval_U_matched_flatten=eval_U_matched.flatten()
+
+            # x,y로 eval_U_matched를 그리기 위한 이차 정방 배열 좌표를 만듦
+            x=[]; y=[]
+            for y_ in range(square_NPs_side):
+                for x_ in range(square_NPs_side):
+                    x.append(x_)
+                    y.append(y_)
+            
+            # x, y를 eval_U_matched 개수 만큼 자름
+            x = x[:element_count]; y = y[:element_count]
+            # eval_U_matched 그래프 그림
+            plt.scatter(x=x, y=y, c=eval_U_matched_flatten, cmap='jet')
+            plt.axis('off')
+            
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[10,4])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_U_matched(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_eval_U_predicted_matched(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        self.show_all_eval_U(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        self.show_all_eval_U_predicted(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        self.show_all_eval_U_matched(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+    
+    def show_all_eval_fmd_right_ratio(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_eval_fmd_right_ratio(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
             
             # * 2 eval_fmd_right_ratio 그래프 그리기
             # subplot 위치를 지정함
@@ -2244,8 +2489,6 @@ class FMD():
             
             # 최소제곱법 1차 함수 그리기
             plt.plot([x.min(), x.max()], [a*x.min()+b, a*x.max()+b])
-            # line의 1/2 지점에 기울기 표시하기
-            plt.text(x=(x.min() + x.max())/2, y=(a*x.min()+b + a*x.max()+b)/2, s=f'slope = {a: 0.4f}', fontdict={'size': 14})
 
             # * 4. 피어슨 상관 계수 표시하기
             x_mean = x.mean(); y_mean = y.mean() # x, y 평균 구하기
@@ -2254,15 +2497,15 @@ class FMD():
             std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
             r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
             # line의 1/3 지점에 피어슨 상관 계수 표시하기
-            plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=((a*x.min()+b)*2/3 + (a*x.max()+b)*1/3), s=f'pearson correlation coefficient  = {r: 0.4f}', fontdict={'size': 14})
+            plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=1, s=f'pearson correlation coefficient  = {r: 0.4f}', fontdict={'size': 14})
 
-            plt.xticks(fontsize = 16)
             plt.xlabel('feature map distance', {'size': '16'})
             plt.xlim(x.min(), x.max()) # interval에 아무것도 없는 것은 표기하지 않음
             plt.yticks(fontsize = 16)
             plt.ylabel('right ratio', {'size': '16'})
             plt.ylim(-0.1, 1.1) # interval에 아무것도 없는 것은 표기하지 않음
-        
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
         is_there_all_data = True
         for i, class_dir in enumerate(class_dirs):
@@ -2278,26 +2521,23 @@ class FMD():
         
         # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
         # 한 그래프 크기 정하기
-        plt.figure(figsize=[48,48])
+        plt.figure(figsize=[48,20])
         # subplot 열과 행 정하기
         column_count = 5
-        row_count = (len(class_dirs)-1)%column_count + 1
+        row_count = (len(class_dirs)-1)//column_count + 1
         # 그래프 그리기
         for i, class_dir in enumerate(class_dirs):
             subplot_index = [row_count, column_count, i+1]
-            show_eval_fmd_right_ratio(subplot_index=subplot_index, class_dir=class_dir, metric_name=metric_name, eval_name=eval_name)
+            show_eval_fmd_right_ratio(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
         # 그래프 보여주기
         plt.show()
     
-    def show_all_fmds(self, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
-        def show_fmds(subplot_index, metric_name='FM_mean rmw_max,1000 all se_lfmd C rvalid_fmds_average', eval_name='test'):
-            # * 1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
-            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb")
-            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb")
-            class_infos = pickle.load(class_infos_file)
-            metric = pickle.load(metric_file)
-            class_infos_file.close()
-            metric_file.close()
+    def show_all_fmds(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_fmds(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
             
             # * 2 eval_fmd_right_ratio 그래프 그리기
             # subplot 위치를 지정함
@@ -2305,28 +2545,29 @@ class FMD():
             # title 적기
             class_name = class_dir.split('/')[-1]
             plt.title(f'{class_name}', fontdict={'size': '32'})
-            # * 2. fmds 그래프 그리기
-            eval_fmds = self.metrics[metric_name]['eval_fmds'][eval_name]
+            
+            # * 3. fmds 그래프 그리기
+            eval_fmds = metric['eval_fmds'][eval_name]
             # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
-            reval_fmds = eval_fmds[self.eval_U[eval_name]]; weval_fmds = eval_fmds[np.logical_not(self.eval_U[eval_name])]
-            plt.boxplot([self.metrics[metric_name]['rvalid_fmds'], self.metrics[metric_name]['wvalid_fmds'], eval_fmds, reval_fmds, weval_fmds], notch=True)
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
+            plt.boxplot([metric['rvalid_fmds'], metric['wvalid_fmds'], eval_fmds, reval_fmds, weval_fmds], notch=True)
             plt.xticks([1, 2, 3, 4, 5], ['rvalid_fmds', 'wvalid_fmds', 'eval_fmds', 'reval_fmds', 'weval_fmds'])
 
-            # * 3. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
+            # * 4. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
             # * 4.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
             # HP_fmdcs의 값과 이름을 모두 value_names에 저장함
-            HP_fmdcs = self.metrics[metric_name]['HP_fmdcs']; value_names=[]
-            fmdc_HP = self.metrics[metric_name]['fmdc_HP']
+            HP_fmdcs = metric['HP_fmdcs']; value_names=[]
+            fmdc_HP = metric['fmdc_HP']
             for key in HP_fmdcs.keys():
                 if key == fmdc_HP:
                     value_names.append([HP_fmdcs[key], key + '(fmdc)'])
                 else:
                     value_names.append([HP_fmdcs[key], key])
             # weval_fmds.min(), reval_fmds.max()의 값과 이름을 모두 value_names에 저장함
-            reval_fmds = eval_fmds[self.eval_U[eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
-            weval_fmds = eval_fmds[np.logical_not(self.eval_U[eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+            weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
 
-            # * 3.2. 실선 그리기
+            # * 4.2. 실선 그리기
             # value_names로 HP_fmdcs의 값과 이름을 fmds를 가로질러 표시함
             for value, name in value_names:
                 if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
@@ -2335,24 +2576,12 @@ class FMD():
                     plt.plot([1, 5], [value, value], label=name, linestyle=':', linewidth=4, alpha=0.4)
                 else:
                     plt.plot([1, 5], [value, value], label=name)
-            # legend로 값의 label 표시
-            plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left', ncol=1)
 
             plt.xticks(fontsize = 10)
             plt.yticks(fontsize = 14)
             plt.ylabel('feature map distance', {'size': '16'})
-            plt.show()
 
-            # * 4. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 값 출력하기
-            for value, name in value_names:
-                if name == 'rvalid_fmds_max_wvalid_fmds_min_average' or\
-                name == 'rvalid_fmds_max_wvalid_fmds_min_average(fmdc)':
-                    print(f"{name}:\t{value: .4f}")
-                elif name.split('_')[-1] == 'average(fmdc)' or name.split('_')[-1] == 'middle(fmdc)':
-                        print(f"{name}:\t\t\t{value: .4f}")
-                else:
-                    print(f"{name}:\t\t\t\t{value: .4f}")
-                    
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
         is_there_all_data = True
         for i, class_dir in enumerate(class_dirs):
@@ -2368,16 +2597,788 @@ class FMD():
         
         # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
         # 한 그래프 크기 정하기
-        plt.figure(figsize=[48,48])
+        plt.figure(figsize=[48,24])
         # subplot 열과 행 정하기
         column_count = 5
-        row_count = (len(class_dirs)-1)%column_count + 1
+        row_count = (len(class_dirs)+1-1)//column_count + 1
         # 그래프 그리기
         for i, class_dir in enumerate(class_dirs):
             subplot_index = [row_count, column_count, i+1]
-            show_eval_fmd_right_ratio(subplot_index=subplot_index, class_dir=class_dir, metric_name=metric_name, eval_name=eval_name)
+            show_fmds(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+        metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+        
+        labels = []
+        
+        HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                labels.append(key+'(fmdc)')
+            else:
+                labels.append(key)
+        
+        labels.append('reval_fmds_max')
+        labels.append('weval_fmds_min')
+        
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        for label in labels:
+            plt.plot(1, 1, label=label)
+        plt.legend()
+        plt.axis('off')
+        
         # 그래프 보여주기
         plt.show()
     
+    def show_all_efficiency(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[15,8])
+        # title 적기
+        plt.title('Efficiency', fontdict={'size': '16'})
+        # 그래프 그리기
+        bar_width = 0.35; alpha = 0.5
+        index = []; label = []
+        for i, class_dir in enumerate(class_dirs):
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * U efficiency, FMD efficiency 그리기
+            class_dir_splited = class_infos['class_dir'].split('/'); class_name = class_dir_splited[-1]
+            p1 = plt.bar(i - (bar_width)/2, metric['N'][eval_name], bar_width, color='blue', alpha=alpha, label='U efficiency')
+            p2 = plt.bar(i + (bar_width)/2, metric['NPV'][eval_name], bar_width, color='orange', alpha=alpha, label='FMD efficiency')
+            
+            index.append(i)
+            label.append(f'{class_name}')
+        
+        plt.ylabel('Efficiency')
+        plt.ylim(-0.1, 1.1)
+        plt.xlabel('class')
+        plt.xticks(index, label)
+        plt.xlim(min(index)-1, max(index)+1)
+        # 그래프 보여주기
+        plt.legend((p1[0], p2[0]), ('U efficiency', 'FMD efficiency'))
+        plt.show()
+    
+    def show_all_fmdc_TNR_TPR(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_fmdc_TNR_TPR(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            
+            # * 2. fmdc_TNR_TPR 그래프 그리기
+            plt.plot(metric['fmdcs'][eval_name], metric['TPR_fmdc'][eval_name], 'bo', label='TPR')
+            plt.plot(metric['fmdcs'][eval_name], metric['TNR_fmdc'][eval_name], 'ro', label='TNR')
+
+            # * 3. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
+            # * 3.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
+            # HP_fmdcs의 값과 이름을 모두 넣음
+            value_names = []; HP_fmdcs = metric['HP_fmdcs']
+            fmdc_HP = metric['fmdc_HP']
+            for key in HP_fmdcs.keys():
+                if key == fmdc_HP:
+                    value_names.append([HP_fmdcs[key], key+'(fmdc)'])
+                else:
+                    value_names.append([HP_fmdcs[key], key])
+
+            # weval_fmds.min(), reval_fmds.max()에 대한 값과 이을 모두 value_names에 넣음
+            # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
+            eval_fmds = metric['eval_fmds'][eval_name]
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+            weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+
+            # * 3.2. 실선 그리기
+            for value, name in value_names:
+                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                    plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                elif name ==  fmdc_HP + '(fmdc)':
+                    plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot([value, value], [0, 1], label=name)
+
+            plt.xticks(fontsize = 14)
+            plt.yticks(fontsize = 14)
+            plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+            plt.ylabel('TPR / TNR', {'size': '16'})
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,24])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)+1-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_fmdc_TNR_TPR(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+        metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+        
+        labels = ['TPR', 'TNR']
+        
+        HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                labels.append(key+'(fmdc)')
+            else:
+                labels.append(key)
+        
+        labels.append('reval_fmds_max')
+        labels.append('weval_fmds_min')
+        
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        for label in labels:
+            if label == 'TPR':
+                plt.plot(1, 1, 'bo', label=label)
+            elif label == 'TNR':
+                plt.plot(1, 1, 'ro', label=label)
+            else:
+                plt.plot(1, 1, label=label)
+        plt.legend()
+        plt.axis('off')
+        
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_roc_curve(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_roc_curve(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            
+            # * 2. ROC, AUC 그리기
+            TPRs = metric['TPR_fmdc'][eval_name]; TNRs = metric['TNR_fmdc'][eval_name]; AUC = metric['AUC'][eval_name]
+            # ROC 그리기
+            plt.plot(1 - TNRs, TPRs)
+            # AUC 그리기
+            AUC_plot_x = []; AUC_plot_y = []
+            for i in range(len(TPRs)):
+                AUC_plot_x.append(1-TNRs[i]); AUC_plot_x.append(1-TNRs[i])
+                AUC_plot_y.append(0); AUC_plot_y.append(TPRs[i])
+            plt.plot(AUC_plot_x, AUC_plot_y, label='AUC', color='red', alpha=0.4, linewidth=10)
+            plt.text(x=0.6, y=0.2, s=f'AUC: {AUC: 0.4f}', fontdict={'size': '16'})
+
+            plt.xlabel('FPR(= 1 - TNR)')
+            plt.ylabel('TPR')
+            plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+            
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,18])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_roc_curve(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_P_N_TP_FN_TN_FP_fmdc(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_P_N_TP_FN_TN_FP_fmdc(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            
+            # * 2. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
+            # HP_fmdcs의 값과 이름을 모두 넣음
+            value_names = []; HP_fmdcs = metric['HP_fmdcs']
+            fmdc_HP = metric['fmdc_HP']
+            for key in HP_fmdcs.keys():
+                if key == fmdc_HP:
+                    value_names.append([HP_fmdcs[key], key+'(fmdc)'])
+                else:
+                    value_names.append([HP_fmdcs[key], key])
+
+            # weval_fmds.min(), reval_fmds.max()에 대한 값과 이름 모두 value_names에 넣음
+            # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
+            eval_fmds = metric['eval_fmds'][eval_name]
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+            weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+
+            # * 2. fmdc_CM_info_fmdc 그래프 그리기
+            fmdcs = metric['fmdcs'][eval_name]
+            
+            # 'P', 'N', 'TP', 'FN', 'TN', 'FP' 그리기
+            CM_info_names = ['P', 'N', 'TP', 'FN', 'TN', 'FP']
+            for CM_info_name in CM_info_names:
+                if CM_info_name == 'P' or CM_info_name == 'N':
+                    plt.plot(fmdcs, metric[f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_name}', linestyle='--', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot(fmdcs, metric[f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_name}', linewidth=4)
+            
+            # 실선 그리기 
+            for value, name in value_names:
+                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                    plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                elif name ==  fmdc_HP + '(fmdc)':
+                    plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot([value, value], [0, 1], label=name)
+
+            plt.xticks(fontsize = 14)
+            plt.yticks(fontsize = 14)
+            plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+            plt.ylabel('TP, FN, TN, FP', {'size': '16'})
+            plt.ylim(-0.1, 1.1)
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,24])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)+1-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_P_N_TP_FN_TN_FP_fmdc(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+        metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+        
+        labels = ['P', 'N', 'TP', 'FN', 'TN', 'FP']
+        
+        HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                labels.append(key+'(fmdc)')
+            else:
+                labels.append(key)
+        
+        labels.append('reval_fmds_max')
+        labels.append('weval_fmds_min')
+        
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        for label in labels:
+            plt.plot(1, 1, label=label)
+        plt.legend()
+        plt.axis('off')
+        
+        # 그래프 보여주기
+        plt.show()
+        
+    def show_all_TPR_TNR_FNR_FPR_fmdc(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_TPR_TNR_FNR_FPR_fmdc(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            
+            # * 2. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
+            # HP_fmdcs의 값과 이름을 모두 넣음
+            value_names = []; HP_fmdcs = metric['HP_fmdcs']
+            fmdc_HP = metric['fmdc_HP']
+            for key in HP_fmdcs.keys():
+                if key == fmdc_HP:
+                    value_names.append([HP_fmdcs[key], key+'(fmdc)'])
+                else:
+                    value_names.append([HP_fmdcs[key], key])
+
+            # weval_fmds.min(), reval_fmds.max()에 대한 값과 이름 모두 value_names에 넣음
+            # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
+            eval_fmds = metric['eval_fmds'][eval_name]
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+            weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+
+            # * 2. fmdc_CM_info_fmdc 그래프 그리기
+            fmdcs = metric['fmdcs'][eval_name]
+            
+            # 'TPR', 'TNR', 'FNR', 'FPR' 그리기
+            CM_info_names = ['TPR', 'TNR', 'FNR', 'FPR']
+            for CM_info_name in CM_info_names:
+                plt.plot(fmdcs, metric[f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_name}', linewidth=4)
+            
+            # 실선 그리기
+            for value, name in value_names:
+                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                    plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                elif name ==  fmdc_HP + '(fmdc)':
+                    plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot([value, value], [0, 1], label=name)
+                    
+            plt.xticks(fontsize = 14)
+            plt.yticks(fontsize = 14)
+            plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+            plt.ylabel('TPR , TNR, FNR, FPR', {'size': '16'})
+            plt.ylim(-0.1, 1.1)
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,24])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)+1-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_TPR_TNR_FNR_FPR_fmdc(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+        metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+        
+        labels = ['TPR', 'TNR', 'FNR', 'FPR']
+        
+        HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                labels.append(key+'(fmdc)')
+            else:
+                labels.append(key)
+        
+        labels.append('reval_fmds_max')
+        labels.append('weval_fmds_min')
+        
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        for label in labels:
+            plt.plot(1, 1, label=label)
+        plt.legend()
+        plt.axis('off')
+        
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_P_N_PPV_NPV_FDR_FOR_fmdc(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        def show_P_N_PPV_NPV_FDR_FOR_fmdc(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            plt.title(f'{class_name}', fontdict={'size': '32'})
+            
+            # * 2. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
+            # HP_fmdcs의 값과 이름을 모두 넣음
+            value_names = []; HP_fmdcs = metric['HP_fmdcs']
+            fmdc_HP = metric['fmdc_HP']
+            for key in HP_fmdcs.keys():
+                if key == fmdc_HP:
+                    value_names.append([HP_fmdcs[key], key+'(fmdc)'])
+                else:
+                    value_names.append([HP_fmdcs[key], key])
+
+            # weval_fmds.min(), reval_fmds.max()에 대한 값과 이름 모두 value_names에 넣음
+            # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
+            eval_fmds = metric['eval_fmds'][eval_name]
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
+            weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
+
+            # * 2. fmdc_CM_info_fmdc 그래프 그리기
+            fmdcs = metric['fmdcs'][eval_name]
+            
+            # 'P', 'N', 'PPV', 'NPV', 'FDR', 'FOR' 그리기
+            CM_info_names = ['P', 'N', 'PPV', 'NPV' , 'FDR', 'FOR']
+            CM_info_labels = ['P(U right ratio)', 'N(U efficiency)', 'PPV', 'NPV(FMD efficiency)' , 'FDR', 'FOR(FMD right ratio)']
+            for i, CM_info_name in enumerate(CM_info_names):
+                if CM_info_name == 'P' or CM_info_name == 'N':
+                    plt.plot(fmdcs, metric[f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_labels[i]}', linestyle='--', linewidth=4)
+                else:
+                    plt.plot(fmdcs, metric[f'{CM_info_name}_fmdc'][eval_name], label=f'{CM_info_labels[i]}', linewidth=4)
+            
+            # 실선 그리기
+            for value, name in value_names:
+                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                    plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                elif name ==  fmdc_HP + '(fmdc)':
+                    plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot([value, value], [0, 1], label=name)
+                    
+            plt.xticks(fontsize = 14)
+            plt.yticks(fontsize = 14)
+            plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
+            plt.ylabel('PPV, NPV , FDR, FOR', {'size': '16'})
+            plt.ylim(-0.1, 1.1)
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 P_N_PPV_NPV_FDR_FOR_fmdc을 그림
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[48,24])
+        # subplot 열과 행 정하기
+        column_count = 5
+        row_count = (len(class_dirs)+1-1)//column_count + 1
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_P_N_PPV_NPV_FDR_FOR_fmdc(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+        metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+        
+        labels = ['P(U right ratio)', 'N(U efficiency)', 'PPV', 'NPV(FMD efficiency)' , 'FDR', 'FOR(FMD right ratio)']
+        
+        HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                labels.append(key+'(fmdc)')
+            else:
+                labels.append(key)
+        
+        labels.append('reval_fmds_max')
+        labels.append('weval_fmds_min')
+        
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        for label in labels:
+            plt.plot(1, 1, label=label)
+        plt.legend()
+        plt.axis('off')
+        
+        # 그래프 보여주기
+        plt.show()
+    
+    def show_all_fmdcs_infos(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        self.show_all_fmdc_TNR_TPR(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        self.show_all_roc_curve(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        self.show_all_P_N_TP_FN_TN_FP_fmdc(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        self.show_all_TPR_TNR_FNR_FPR_fmdc(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        self.show_all_P_N_PPV_NPV_FDR_FOR_fmdc(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+    
+    def show_all_correlation_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        column_names=[]
+        index_names=['correlation']
+        values=[]
+        
+        # * 3. 모든 클래스에 대한 correlation 을 그림
+        for i, class_dir in enumerate(class_dirs):
+            # * 3.1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 3.2 class_name을 column_names에 넣음
+            class_name = class_dir.split('/')[-1]
+            column_names.append(class_name)
+            
+            # * 3.3 eval_fmds, 정분류 비율을 구함
+            # eval_fmd는 그래프에서 x축에 해당하는 부분, right_ratio는 그래프에서 y축에 해당하는 부분
+            eval_fmd = []; right_ratio = []
+            eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
+            eval_fmd_min = eval_fmds.min(); eval_fmd_max = eval_fmds.max() # eval_fmds 최소값, 최대값 찾음.
+            eval_fmd_slice = (class_infos['eval_K'][eval_name] // 10) + 1
+            eval_fmd_interval_length = (eval_fmd_max - eval_fmd_min) / eval_fmd_slice
+
+            # 각 interval을 순회하며 eval_fmd_value(interval의 중앙값)과 right_ratio을 구함
+            for interval_offset in range(eval_fmd_slice):
+                # 각 interval의 중앙값으로 eval_fmd에 할당
+                interval_min = eval_fmd_min + interval_offset*eval_fmd_interval_length; interval_max = eval_fmd_min + (interval_offset+1)*eval_fmd_interval_length
+                eval_fmd_value = (interval_min + interval_max) / 2
+                # 각 interval의 정분류 비율을 RR에 할당
+                upper_than_interval_min = 0
+                lower_than_interval_max = 0
+                if interval_offset != eval_fmd_slice-1:
+                    upper_than_interval_min = eval_fmds >= interval_min
+                    lower_than_interval_max = eval_fmds < interval_max
+                else:
+                    upper_than_interval_min = eval_fmds >= interval_min
+                    lower_than_interval_max = eval_fmds <= interval_max
+
+                # eval_U에서 interval_value에 해당하는 마커를 찾음
+                interval_values_maker = np.logical_and(upper_than_interval_min, lower_than_interval_max)
+                is_right_interval_values = class_infos['eval_U'][eval_name][interval_values_maker]
+                R = len(np.nonzero(is_right_interval_values)[0]); W = len(is_right_interval_values) - R
+
+                # interval에 아무것도 없다면 right_ratio_value에 -1을 할당
+                if R+W == 0:
+                    right_ratio_value = -1
+                else:
+                    right_ratio_value = R / (R + W)
+
+                eval_fmd.append(eval_fmd_value)
+                right_ratio.append(right_ratio_value)
+
+            # eval_fmd, right_ratio를 모두 넘파이 배열로 바꾸기
+            eval_fmd = np.array(eval_fmd); right_ratio = np.array(right_ratio)
+            # 음이 아닌 eval_fmd, right_ratio로 각각 x, y를 고름
+            right_ratio_non_negative_mask = right_ratio >= 0
+            y = right_ratio[right_ratio_non_negative_mask]
+            x = eval_fmd[right_ratio_non_negative_mask]
+
+            # * 3.4. 피어슨 상관 계수 r을 r_values에 넣기
+            x_mean = x.mean(); y_mean = y.mean() # x, y 평균 구하기
+            cov =  ((x - x_mean)*(y - y_mean)).sum() / (len(x) - 1)  # x, y 공분산 구하기, len(x) 대신 len(x)-1로
+            std_x = np.power(((x - x_mean)**2).sum()/(len(x) - 1), 1/2) # x 표준편차 구하기
+            std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
+            r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
+            
+            values.append(f'{r: 0.4f}')
+        
+        values = np.array(values).reshape(1,-1)
+        
+        plt.figure(figsize=[24,1])
+        plt.axis('off')
+        plt.axis('tight')
+        plt.table(cellText=values, cellLoc='center', colLabels=column_names, colLoc='center', rowLabels=index_names, rowLoc='center', loc='center', fontsize=16)
+        # 표 보여주기
+        plt.show()
+        
+    def show_all_HP_fmdc_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        column_names=[]; index_names=[]; values=np.empty((9,1), dtype='<U16')
+        
+        # index_names 이름 초기화
+        class_dir = class_dirs[0]
+        # * 3.1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+        class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+        metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+        
+        HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
+        for key in HP_fmdcs.keys():
+            if key == fmdc_HP:
+                index_names.append(key + '(fmdc)')
+            else:
+                index_names.append(key)
+        # weval_fmds.min(), reval_fmds.max()의 값과 이름을 모두 index_names에 저장함
+        index_names.append('reval_fmds_max')
+        index_names.append('weval_fmds_min')
+        
+        # * 3. 모든 클래스에 대한 correlation 을 그림
+        for i, class_dir in enumerate(class_dirs):
+            # * 3.1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 3.2 class_name을 column_names에 넣음
+            class_name = class_dir.split('/')[-1]
+            column_names.append(class_name)
+            
+            # * 3.3 values에 values_i를 append하기
+            # values_i에 HP_fmdc의 값들 넣음
+            values_i = np.empty((9,1), dtype='<U16'); HP_fmdcs = metric['HP_fmdcs']
+            for i, key in enumerate(HP_fmdcs.keys()):
+                values_i[i][0]=f'{HP_fmdcs[key]: 0.4f}'.strip()
+            # values_i에 reval_fmds_max, weval_fmds_min을 넣음
+            eval_fmds = metric['eval_fmds'][eval_name]
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); values_i[7][0]=f'{reval_fmds_max: 0.4f}'.strip()
+            weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); values_i[8][0]=f'{weval_fmds_min: 0.4f}'.strip()
+                
+            values = np.append(values, values_i, axis=1)
+            
+        values=values[:,1:] # append를 위해 사용한 쓰레기 값 날림
+        
+        plt.figure(figsize=[24,1])
+        plt.axis('off')
+        plt.axis('tight')
+        plt.table(cellText=values, cellLoc='center', colLabels=column_names, colLoc='center', rowLabels=index_names, rowLoc='center', loc='center', fontsize=16)
+        # 표 보여주기
+        plt.show()
+    
+    def show_efficiency_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        column_names=[]; index_names=[]; values=np.empty((3,1), dtype='<U16')
+        # index_names에 U Efficiency, FMD Efficiency 추가
+        index_names.append('U Efficiency'); index_names.append('FMD Efficiency'); index_names.append('FMD ratio')
+        
+        # * 3. 모든 클래스에 대한 correlation 을 그림
+        for i, class_dir in enumerate(class_dirs):
+            # * 3.1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 3.2 class_name을 column_names에 넣음
+            class_name = class_dir.split('/')[-1]
+            column_names.append(class_name)
+            
+            # * 3.3 values에 values_i를 append하기
+            values_i = np.empty((3,1), dtype='<U16')
+            
+            # [N: U Efficiency], [NPV: FMD Efficiency], [FN + TN: FMD ratio]
+            N = metric['N'][eval_name]; NPV = metric['NPV'][eval_name]; FN = metric['FN'][eval_name]; TN = metric['TN'][eval_name]
+            values_i[0][0]=f'{N: 0.4f}'.strip(); values_i[1][0]=f'{NPV: 0.4f}'.strip(); values_i[2][0]=f'{FN + TN: 0.4f}'.strip()
+                
+            values = np.append(values, values_i, axis=1)
+            
+        values=values[:,1:] # append를 위해 사용한 쓰레기 값 날림
+        
+        plt.figure(figsize=[24,1])
+        plt.axis('off')
+        plt.axis('tight')
+        plt.table(cellText=values, cellLoc='center', colLabels=column_names, colLoc='center', rowLabels=index_names, rowLoc='center', loc='center', fontsize=16)
+        # 표 보여주기
+        plt.show()
+    
+    def get_metric_name(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
+        alpha_HP_str = ""
+        if alpha_HP[0] == "rmw_max":
+            alpha_HP_str = alpha_HP[0]+','+str(alpha_HP[1])
+        else:
+            for ele_index, alpha_HP_ele in enumerate(alpha_HP):
+                if ele_index == len(alpha_HP) - 1:
+                    alpha_MHP_i_str += f"{alpha_HP_ele: 0.4f}".strip()
+                else:
+                    alpha_MHP_i_str += f"{alpha_HP_ele: 0.4f}".strip() + str(',')
+                    
+        metric_name=FM_repre_HP+' '+alpha_HP_str+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+fmdc_HP
+        
+        return metric_name
+        
     def predict(self):
         pass
