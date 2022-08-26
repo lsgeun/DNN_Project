@@ -3365,6 +3365,69 @@ class FMD():
         # 표 보여주기
         plt.show()
     
+    def show_accuracy(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+        
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 데이터 셋 이름 title로 지정하기
+        class_dir_0 = class_dirs[0]
+        data_set_name = class_dir_0.split('/')[-2].split('_')[0]
+        plt.title(f"{data_set_name}", fontdict={"size":"16"})
+        
+        # eval_Us, eval_U_Ks, eval_U_rs, eval_U_ws, is_eval_FMDs, eval_FMD_Ks, eval_FMD_rs, eval_FMD_wsd을 빈 배열로 초기화
+        eval_Us=[]; eval_U_Ks=[]; eval_U_rs=[]; eval_U_ws=[]; is_eval_FMDs=[]; eval_FMD_Ks=[]; eval_FMD_rs=[]; eval_FMD_ws=[]; 
+        # is_eval_Us, is_eval_FMDs에 각 클래스 디렉토리에 대한 is_eval_U, is_eval_FMD을 넣기
+        for class_dir in class_dirs:
+            # * 3.1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            eval_U = class_infos['eval_U'][eval_name]; eval_Us.append(eval_U)
+            eval_U_K = len(eval_U); eval_U_Ks.append(eval_U_K)
+            eval_U_r = len(np.nonzero(eval_U)[0]); eval_U_rs.append(eval_U_r)
+            eval_U_w = eval_U_K - eval_U_r; eval_U_ws.append(eval_U_w)
+            
+            is_eval_FMD = metric['is_eval_FMD'][eval_name]; is_eval_FMDs.append(is_eval_FMD)
+            eval_FMD_K = len(eval_U[is_eval_FMD]); eval_FMD_Ks.append(eval_FMD_K)
+            eval_FMD_r = len(np.nonzero(eval_U[is_eval_FMD])[0]); eval_FMD_rs.append(eval_FMD_r)
+            eval_FMD_w = eval_FMD_K - eval_FMD_r; eval_FMD_ws.append(eval_FMD_w)
+        # eval_Us, eval_U_Ks, eval_U_rs, eval_U_ws, is_eval_FMDs, eval_FMD_Ks, eval_FMD_rs, eval_FMD_wsd을 넘파이 배열로 변환
+        eval_U = np.array(eval_U); eval_U_K = np.array(eval_U_K); eval_U_r = np.array(eval_U_r); eval_U_w = np.array(eval_U_w)
+        is_eval_FMD = np.array(is_eval_FMD); eval_FMD_K = np.array(eval_FMD_K); eval_FMD_r = np.array(eval_FMD_r); eval_FMD_w = np.array(eval_FMD_w)
+        
+        sum_eval_U_Ks = eval_U_K.sum(); sum_eval_U_rs = eval_U_r.sum(); sum_eval_U_ws = eval_U_w.sum()
+        sum_eval_FMD_Ks = eval_FMD_K.sum(); sum_eval_FMD_rs = eval_FMD_r.sum(); sum_eval_FMD_ws = eval_FMD_w.sum()
+        
+        bar_width = 0.3; alpha = 0.5
+        
+        p1 = plt.bar(0 - (bar_width)/2, sum_eval_U_rs / sum_eval_U_Ks, bar_width, color='blue', alpha=alpha, label='U accuracy')
+        p2 = plt.bar(0 + (bar_width)/2, sum_eval_FMD_rs / sum_eval_FMD_Ks, bar_width, color='orange', alpha=alpha, label='FMD accuracy')
+        
+        plt.ylabel('accuracy')
+        plt.ylim(-0.1, 1.1)
+        plt.xlim(0 - 0.5, 0 + 0.5)
+        # 그래프 보여주기
+        plt.legend((p1[0], p2[0]), ('U accuracy', 'FMD accuracy'))
+        ax = plt.gca()
+        ax.get_xaxis().set_visible(False)
+        
+        plt.table(cellText=[[f"{sum_eval_U_rs / sum_eval_U_Ks: 0.4f}", f"{sum_eval_FMD_rs / sum_eval_FMD_Ks: 0.4f}"]], cellLoc='center', colLabels=['U accuracy', 'FMD accuracy'], rowLabels=['accuracy'])
+        
+        # 그래프 보여주기
+        plt.show()
+    
     def get_metric_name(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
         alpha_HP_str = ""
         if alpha_HP[0] == "rmw_max":
