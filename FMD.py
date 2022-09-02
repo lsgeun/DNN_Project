@@ -1,4 +1,3 @@
-# import cupy as np # CUDA를 지원하는 컴퓨터라면 CUDA 버전에 맞게 cupy를 설치하여 cupy 임포트
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -3418,11 +3417,15 @@ class FMD():
             print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
             return
         
-        column_names=[]; index_names=[]; values=np.empty((2,1), dtype='<U16')
-        # index_names에 U Efficiency, FMD Efficiency 추가
-        index_names.append('U Effectiveness'); index_names.append('FMD Effectiveness')
+        column_names=[]; index_names=[]
+        # index_names에 추가
+        index_names.append('U count'); index_names.append('Wrong U count'); index_names.append('U Effectiveness')
+        index_names.append('FMD count'); index_names.append('Wrong FMD count'); index_names.append('FMD Effectiveness')
+        index_names.append('Effectiveness distance difference'); index_names.append('Effectiveness proportion difference')
+        index_count = len(index_names)
+        values=np.empty((index_count,1), dtype='<U16')
         
-        # * 3. 모든 클래스에 대한 correlation 을 그림
+        # * 3. 모든 클래스에 대한 효과성을 넣음
         for i, class_dir in enumerate(class_dirs):
             # * 3.1. 해당 class_dir, metric에 해당하는 파일 열어서 지역변수로 저장
             class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
@@ -3433,15 +3436,34 @@ class FMD():
             column_names.append(class_name)
             
             # * 3.3 values에 values_i를 append하기
-            values_i = np.empty((2,1), dtype='<U16')
+            values_i = np.empty((index_count,1), dtype='<U16')
             
-            # [N: U Efficiency], [NPV: FMD Efficiency]
-            N = metric['N'][eval_name]; NPV = metric['NPV'][eval_name]
-            values_i[0][0]=f'{N: 0.4f}'.strip(); values_i[1][0]=f'{NPV: 0.4f}'.strip()
-                
+            # U, FMD에 관한 값을 넣음
+            eval_U = class_infos["eval_U"][eval_name]; is_eval_FMD = metric["is_eval_FMD"][eval_name]
+            U_K = len(eval_U); U_r = len(np.nonzero(eval_U)[0]); U_w = U_K - U_r; N = metric['N'][eval_name]; 
+            values_i[0][0]=f'{U_K}'; values_i[1][0]=f'{U_w}'; values_i[2][0]=f'{N: 0.4f}'.strip()
+            FMD_K = len(eval_U[is_eval_FMD]); FMD_r = len(np.nonzero(eval_U[is_eval_FMD])[0])
+            FMD_w = FMD_K - FMD_r; NPV = metric['NPV'][eval_name]
+            values_i[3][0]=f'{FMD_K}'; values_i[4][0]=f'{FMD_w}'; values_i[5][0]=f'{NPV: 0.4f}'.strip()
+            values_i[6][0]=f'{NPV - N: 0.4f}'.strip(); values_i[7][0]=f'{((NPV - N)/N)*100: 0.4f}'.strip()
+            
             values = np.append(values, values_i, axis=1)
-            
+        
         values=values[:,1:] # append를 위해 사용한 쓰레기 값 날림
+        
+        # values를 values_float로 바꿈
+        values_float = np.array(values, dtype='float')
+        values_float_mean = values_float.mean(axis = 1)
+        
+        values_float_mean_str = np.empty((index_count,1), dtype='<U16'); row_count = len(values)
+        for i in range(row_count):
+            if i == 0 or i == 1 or i == 3 or i == 4:
+                values_float_mean_str[i][-1] = f'{int(values_float_mean[i])}'.strip()
+            else:
+                values_float_mean_str[i][-1] = f'{values_float_mean[i]: 0.4f}'.strip()
+        # 열 추가
+        values = np.append(values, values_float_mean_str, axis=1)
+        column_names.append("average")
         
         plt.figure(figsize=[width,height])
         plt.axis('off')
@@ -3591,3 +3613,4 @@ class FMD():
         metric_name=FM_repre_HP+' '+alpha_HP_str+' '+DAM_HP+' '+lfmd_HP+' '+W_HP+' '+fmdc_HP
         
         return metric_name
+        
