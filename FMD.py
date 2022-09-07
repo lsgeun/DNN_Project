@@ -673,7 +673,14 @@ class FMD():
         exp_lengths_minus_shift_value = np.zeros(self.shape[l])
         # 각 원소를 shift value 만큼 이동시키고 'exponential'을 취함
         for index in self.metrics[metric_name]['DAM_indexes'][l]:
-            exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive)
+            # exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive)
+            # ! DELETE START
+            if 0.5 <= lengths.item(index) and lengths.item(index) <= 1:
+                exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive + np.exp(0.5))
+            else:
+                exp_lengths_minus_shift_value.itemset(index, -np.exp(-(lengths.item(index) - shift_value))**sensitive + np.exp(0.5))
+            # ! DELETE END
+                
         # se를 취한 값들을 모두 더한 것이 se_lfmd임
         se_lfmd = exp_lengths_minus_shift_value.sum()
 
