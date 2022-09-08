@@ -676,9 +676,9 @@ class FMD():
             # exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive)
             # ! DELETE START
             if 0.5 <= lengths.item(index) and lengths.item(index) <= 1:
-                exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive + np.exp(0.5))
+                exp_lengths_minus_shift_value.itemset(index, (np.exp(lengths.item(index) - shift_value))**sensitive + np.exp(0.5) - 2)
             else:
-                exp_lengths_minus_shift_value.itemset(index, -np.exp(-(lengths.item(index) - shift_value))**sensitive + np.exp(0.5))
+                exp_lengths_minus_shift_value.itemset(index, -(np.exp(-(lengths.item(index) - shift_value))**sensitive) + np.exp(0.5))
             # ! DELETE END
                 
         # se를 취한 값들을 모두 더한 것이 se_lfmd임
