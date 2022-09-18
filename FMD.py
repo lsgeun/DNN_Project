@@ -676,9 +676,9 @@ class FMD():
             # exp_lengths_minus_shift_value.itemset(index, np.exp(lengths.item(index) - shift_value)**sensitive)
             # ! DELETE START
             if 0.5 <= lengths.item(index) and lengths.item(index) <= 1:
-                exp_lengths_minus_shift_value.itemset(index, (np.exp(lengths.item(index) - shift_value))**sensitive + np.exp(0.5) - 2)
+                exp_lengths_minus_shift_value.itemset(index, (np.exp(lengths.item(index) - shift_value))**sensitive + np.exp(0.5)**sensitive - 2)
             else:
-                exp_lengths_minus_shift_value.itemset(index, -(np.exp(-(lengths.item(index) - shift_value))**sensitive) + np.exp(0.5))
+                exp_lengths_minus_shift_value.itemset(index, -(np.exp(-(lengths.item(index) - shift_value))**sensitive) + np.exp(0.5)**sensitive)
             # ! DELETE END
                 
         # se를 취한 값들을 모두 더한 것이 se_lfmd임
@@ -1886,7 +1886,7 @@ class FMD():
         # show_efficiency 출력
         self.show_efficiency(metric_name, eval_name, show_category=False)
 
-    def show_fmdc_TNR_TPR(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True):
+    def show_fmdc_TNR_TPR(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', show_category=True, fmdc_names=[]):
         
         metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         if show_category == True:
@@ -1920,12 +1920,13 @@ class FMD():
 
         # * 3.2. 실선 그리기
         for value, name in value_names:
-            if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
-                plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
-            elif name ==  fmdc_HP + '(fmdc)':
-                plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
-            else:
-                plt.plot([value, value], [0, 1], label=name)
+            if name in fmdc_names or name[:-6] in fmdc_names:
+                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                    plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                elif name ==  fmdc_HP + '(fmdc)':
+                    plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                else:
+                    plt.plot([value, value], [0, 1], label=name)
         # legend로 값의 label 표시
         plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left', ncol=1)
 
@@ -2649,7 +2650,7 @@ class FMD():
         # 그래프 보여주기
         plt.show()
     
-    def show_all_fmdc_TNR_TPR(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
+    def show_all_fmdc_TNR_TPR(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir="", fmdc_names=[]):
         def show_fmdc_TNR_TPR(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
             metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
@@ -2686,12 +2687,13 @@ class FMD():
 
             # * 3.2. 실선 그리기
             for value, name in value_names:
-                if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
-                    plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
-                elif name ==  fmdc_HP + '(fmdc)':
-                    plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
-                else:
-                    plt.plot([value, value], [0, 1], label=name)
+                if name in fmdc_names or name[:-6] in fmdc_names:
+                    if name == f'reval_fmds_max_{eval_name}' or name == f'weval_fmds_min_{eval_name}':
+                        plt.plot([value, value], [0, 1], label=name, linestyle='--', linewidth=4, alpha=0.4)
+                    elif name ==  fmdc_HP + '(fmdc)':
+                        plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
+                    else:
+                        plt.plot([value, value], [0, 1], label=name)
 
             plt.xticks(fontsize = 14)
             plt.yticks(fontsize = 14)
