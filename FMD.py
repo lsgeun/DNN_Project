@@ -2736,8 +2736,8 @@ class FMD():
             else:
                 labels.append(key)
         
-        labels.append('reval_fmds_max')
-        labels.append('weval_fmds_min')
+        labels.append(f'reval_fmds_max_{eval_name}')
+        labels.append(f'weval_fmds_min_{eval_name}')
         
         subplot_index = [row_count, column_count, len(class_dirs)+1]
         plt.subplot(*subplot_index)
@@ -2747,7 +2747,8 @@ class FMD():
             elif label == 'TNR':
                 plt.plot(1, 1, 'ro', label=label)
             else:
-                plt.plot(1, 1, label=label)
+                if label in fmdc_names or label[:-6] in fmdc_names:
+                    plt.plot(1, 1, label=label)
         plt.legend()
         plt.axis('off')
         
