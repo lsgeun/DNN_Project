@@ -2449,7 +2449,7 @@ class FMD():
             plt.subplot(*subplot_index)
             # title 적기
             class_name = class_dir.split('/')[-1]
-            plt.title(f'{class_name}', fontdict={'size': '32'})
+            # plt.title(f'{class_name}', fontdict={'size': '32'}) # ! 아마도 삭제
             # eval_fmd는 그래프에서 x축에 해당하는 부분, right_ratio는 그래프에서 y축에 해당하는 부분
             eval_fmd = []; right_ratio = []
             eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
@@ -2512,10 +2512,12 @@ class FMD():
             std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
             r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
             # line의 1/3 지점에 피어슨 상관 계수 표시하기
-            plt.text(x=(x.min() * 2/3 + x.max() * 1/3), y=1, s=f'pearson correlation coefficient  = {r: 0.4f}', fontdict={'size': 14})
-
+            plt.text(x=(x.min() + x.max())/2, y=0.85, horizontalalignment = 'center', s=f'pearson correlation coefficient\n= {r: 0.4f}', fontdict={'size': 24})
+            plt.text(x=(x.min() + x.max())/2, y=1.03, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': '24'}) # ! 아마도 삭제
+            
+            plt.xticks(fontsize = 16)
             plt.xlabel('feature map distance', {'size': '16'})
-            plt.xlim(x.min(), x.max()) # interval에 아무것도 없는 것은 표기하지 않음
+            plt.xlim(x.min(), x.max()) # interval에 아무것도 없는 것은 표하지 않음
             plt.yticks(fontsize = 16)
             plt.ylabel('right ratio', {'size': '16'})
             plt.ylim(-0.1, 1.1) # interval에 아무것도 없는 것은 표기하지 않음
@@ -2662,7 +2664,7 @@ class FMD():
             plt.subplot(*subplot_index)
             # title 적기
             class_name = class_dir.split('/')[-1]
-            plt.title(f'{class_name}', fontdict={'size': '32'})
+            # plt.title(f'{class_name}', fontdict={'size': '32'}) # ! 아마도 삭제
             
             # * 2. fmdc_TNR_TPR 그래프 그리기
             plt.plot(metric['fmdcs'][eval_name], metric['TPR_fmdc'][eval_name], 'bo', label='TPR')
@@ -2694,9 +2696,11 @@ class FMD():
                         plt.plot([value, value], [0, 1], label=name, linestyle=':', linewidth=4, alpha=0.4)
                     else:
                         plt.plot([value, value], [0, 1], label=name)
-
-            plt.xticks(fontsize = 14)
-            plt.yticks(fontsize = 14)
+                        
+            plt.text(x=max(metric['fmdcs'][eval_name]), y=0.5, horizontalalignment = 'right', s=f'{class_name}', fontdict={'size': '24'}) # ! 아마도 삭제    
+            
+            plt.xticks(fontsize = 16)
+            plt.yticks(fontsize = 16)
             plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
             plt.ylabel('TPR / TNR', {'size': '16'})
         
@@ -2748,8 +2752,15 @@ class FMD():
                 plt.plot(1, 1, 'ro', label=label)
             else:
                 if label in fmdc_names or label[:-6] in fmdc_names:
-                    plt.plot(1, 1, label=label)
-        plt.legend()
+                    if label == "rvalid_fmds_average" or label[:-6] == "rvalid_fmds_average":
+                        plt.plot(1, 1, label="Average of correctly classified validation data fmd")
+                    elif label == "wvalid_fmds_average" or label[:-6] == "wvalid_fmds_average":
+                        plt.plot(1, 1, label="Average of incorrectly classified validation data fmd")
+                    elif label == "wvalid_fmds_middle" or label[:-6] == "wvalid_fmds_middle":
+                        plt.plot(1, 1, label="Median of incorrectly classified validation data fmd")
+                    else:
+                        plt.plot(1, 1, label=label)
+        plt.legend(fontsize=18)
         plt.axis('off')
         
         if save_dir != "":
