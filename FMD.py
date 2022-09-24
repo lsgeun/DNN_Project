@@ -1,3 +1,4 @@
+from calendar import c
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -2222,7 +2223,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_eval_venn_diagram.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_eval_U(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=2, height=2, column_count=5, save_dir=""):
@@ -2290,7 +2290,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_eval_U.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_eval_U_predicted(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=2, height=2, column_count=5, save_dir=""):
@@ -2359,7 +2358,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_eval_U_predicted.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_eval_U_matched(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=2, height=2, column_count=5, save_dir=""):
@@ -2429,7 +2427,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_eval_U_matched.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_eval_U_predicted_matched(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=2, height=2, column_count=5, save_dir=""):
@@ -2437,7 +2434,9 @@ class FMD():
         self.show_all_eval_U_predicted(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name, width=width, height=height, column_count=column_count, save_dir=save_dir)
         self.show_all_eval_U_matched(class_dirs,FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name, width=width, height=height, column_count=column_count, save_dir=save_dir)
     
-    def show_all_eval_fmd_right_ratio(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
+    def show_all_eval_fmd_right_ratio(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+                                        width=9.6, height=9, column_count=5, point_size=100, alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, labelname_fontsize=24, correlation_fontsize=24):
+        
         def show_eval_fmd_right_ratio(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
             metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
@@ -2487,7 +2486,7 @@ class FMD():
                 right_ratio.append(right_ratio_value)
 
             ones = np.ones(eval_fmd_slice)
-            plt.scatter(x=eval_fmd, y=right_ratio, s=ones)
+            plt.scatter(x=eval_fmd, y=right_ratio, s=ones*point_size, alpha=alpha)
 
             # * 3. 최소제곱법을 이용해서 그래프에 가까운 1차함수 그리고 기울기 표시하기
             # eval_fmd, right_ratio를 모두 넘파이 배열로 바꾸기
@@ -2512,14 +2511,14 @@ class FMD():
             std_y = np.power(((y - y_mean)**2).sum()/(len(y) - 1), 1/2) # y 표준편차 구하기
             r =  cov / (std_x * std_y) # 피어슨 상관 계수 구하기
             # line의 1/3 지점에 피어슨 상관 계수 표시하기
-            plt.text(x=(x.min() + x.max())/2, y=0.85, horizontalalignment = 'center', s=f'pearson correlation coefficient\n= {r: 0.4f}', fontdict={'size': 24})
-            plt.text(x=(x.min() + x.max())/2, y=1.03, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': '24'}) # ! 아마도 삭제
+            plt.text(x=(x.min() + x.max())/2, y=1.03, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제
+            plt.text(x=(x.min() + x.max())/2, y=0.85, horizontalalignment = 'center', s=f'pearson correlation coefficient\n= {r: 0.4f}', fontdict={'size': f'{correlation_fontsize}'})
             
-            plt.xticks(fontsize = 16)
-            plt.xlabel('feature map distance', {'size': '16'})
+            plt.xticks(fontsize = xticks_fontsize)
+            plt.xlabel('feature map distance', {'size': f'{xlabel_fontsize}'})
             plt.xlim(x.min(), x.max()) # interval에 아무것도 없는 것은 표하지 않음
-            plt.yticks(fontsize = 16)
-            plt.ylabel('right ratio', {'size': '16'})
+            plt.yticks(fontsize = yticks_fontsize)
+            plt.ylabel('right ratio', {'size': f'{ylabel_fontsize}'})
             plt.ylim(-0.1, 1.1) # interval에 아무것도 없는 것은 표기하지 않음
 
         metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
@@ -2548,7 +2547,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_eval_fmd_right_ratio.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_fmds(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
@@ -2649,10 +2647,11 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_fmds.png")
-        # 그래프 보여주기
         plt.show()
     
-    def show_all_fmdc_TNR_TPR(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir="", fmdc_names=[]):
+    def show_all_fmdc_TNR_TPR(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+                                width=9.6, height=9, column_count=5, point_size=100, alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, labelname_fontsize=24, legend_fontsize=20, fmdc_names=[]):
+                                
         def show_fmdc_TNR_TPR(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
             metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
@@ -2667,8 +2666,9 @@ class FMD():
             # plt.title(f'{class_name}', fontdict={'size': '32'}) # ! 아마도 삭제
             
             # * 2. fmdc_TNR_TPR 그래프 그리기
-            plt.plot(metric['fmdcs'][eval_name], metric['TPR_fmdc'][eval_name], 'bo', label='TPR')
-            plt.plot(metric['fmdcs'][eval_name], metric['TNR_fmdc'][eval_name], 'ro', label='TNR')
+            ones = np.ones(metric['fmdcs'][eval_name].__len__())
+            plt.scatter(x=metric['fmdcs'][eval_name], y=metric['TPR_fmdc'][eval_name], s=ones*point_size, alpha=alpha, c='blue', label='TPR')
+            plt.scatter(x=metric['fmdcs'][eval_name], y=metric['TNR_fmdc'][eval_name], s=ones*point_size, alpha=alpha, c='red', label='TNR')
 
             # * 3. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
             # * 3.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
@@ -2697,12 +2697,12 @@ class FMD():
                     else:
                         plt.plot([value, value], [0, 1], label=name)
                         
-            plt.text(x=max(metric['fmdcs'][eval_name]), y=0.5, horizontalalignment = 'right', s=f'{class_name}', fontdict={'size': '24'}) # ! 아마도 삭제    
+            plt.text(x=max(metric['fmdcs'][eval_name]), y=0.5, horizontalalignment = 'right', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제    
             
-            plt.xticks(fontsize = 16)
-            plt.yticks(fontsize = 16)
-            plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': '16'})
-            plt.ylabel('TPR / TNR', {'size': '16'})
+            plt.xticks(fontsize = xticks_fontsize)
+            plt.yticks(fontsize = yticks_fontsize)
+            plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': f'{xlabel_fontsize}'})
+            plt.ylabel('TPR / TNR', {'size': f'{ylabel_fontsize}'})
         
         metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
@@ -2760,12 +2760,12 @@ class FMD():
                         plt.plot(1, 1, label="Median of incorrectly classified validation data fmd")
                     else:
                         plt.plot(1, 1, label=label)
-        plt.legend(fontsize=18)
+                        
+        plt.legend(fontsize=legend_fontsize, loc='upper left', bbox_to_anchor=(0, 1))
         plt.axis('off')
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_fmdc_TNR_TPR.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_roc_curve(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
@@ -2824,7 +2824,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_roc_curve.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_P_N_TP_FN_TN_FP_fmdc(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
@@ -2932,7 +2931,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_P_N_TP_FN_TN_FP_fmdc.png")
-        # 그래프 보여주기
         plt.show()
         
     def show_all_TPR_TNR_FNR_FPR_fmdc(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
@@ -3037,7 +3035,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_TPR_TNR_FNR_FPR_fmdc.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_P_N_PPV_NPV_FDR_FOR_fmdc(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
@@ -3146,7 +3143,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_P_N_PPV_NPV_FDR_FOR_fmdc.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_fmdcs_infos(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=9.6, height=9, column_count=5, save_dir=""):
@@ -3370,7 +3366,8 @@ class FMD():
         # 표 보여주기
         plt.show()
     
-    def show_all_effectiveness(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=15, height=8, save_dir=""):
+    def show_all_effectiveness(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+                                width=15, height=8, bar_width=0.35, alpha=0.5, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, legend_fontsize=20):
         
         metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
@@ -3390,7 +3387,6 @@ class FMD():
         # 한 그래프 크기 정하기
         plt.figure(figsize=[width, height])
         # 그래프 그리기
-        bar_width = 0.35; alpha = 0.5
         index = []; label = []
         for i, class_dir in enumerate(class_dirs):
             class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
@@ -3410,16 +3406,16 @@ class FMD():
         for y_i in y:
             plt.plot(x, y_i, linestyle=':', alpha=0.4, color='gray')
         
-        plt.ylim(-0.1, 1.1)
-        plt.yticks([i*0.1 for i in range(10+1)])
-        plt.xlabel('class')
-        plt.xticks(index, label)
+        plt.xlabel('class', fontdict={'size': f'{xlabel_fontsize}'})
+        plt.xticks(index, label, fontsize=xticks_fontsize)
         plt.xlim(min(index)-1, max(index)+1)
-        plt.legend((p1[0], p2[0]), ('U effectiveness', 'FMD effectiveness'))
+        plt.ylabel('effectiveness', fontdict={'size': f'{ylabel_fontsize}'})
+        plt.yticks([i*0.1 for i in range(10+1)], fontsize=yticks_fontsize)
+        plt.ylim(-0.1, 1.1)
+        plt.legend((p1[0], p2[0]), ('U effectiveness', 'FMD effectiveness'), fontsize=legend_fontsize, loc='upper right')
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_effectiveness.png")
-        # 그래프 보여주기
         plt.show()
     
     def show_all_effectiveness_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=12, height=1, save_dir=""):
@@ -3564,7 +3560,6 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/accuracy.png")
-        # 그래프 보여주기
         plt.show()
         
     def show_accuracy_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', width=12, height=0.5, save_dir=""):
@@ -3617,9 +3612,338 @@ class FMD():
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/accuracy.png")
-        # 그래프 보여주기
         plt.show()
     
+    def show_all_eval_fmd_right_count_wrong_count(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+                                                    width=9.6, height=9, column_count=5, point_size=100, point_alpha=0.4, show_right_count=True, show_wrong_count=True, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
+                                                    labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4):
+                                                    
+        def show_eval_fmd_right_count_wrong_count(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            # plt.title(f'{class_name}', fontdict={'size': '32'}) # ! 아마도 삭제
+            # eval_fmd는 그래프에서 x축에 해당하는 부분, right_ratio는 그래프에서 y축에 해당하는 부분
+            R_count = []; W_count = []; eval_fmd = []
+            
+            eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
+            eval_fmd_min = eval_fmds.min(); eval_fmd_max = eval_fmds.max() # eval_fmds 최소값, 최대값 찾음.
+            eval_fmd_slice = (class_infos['eval_K'][eval_name] // 10) + 1
+            eval_fmd_interval_length = (eval_fmd_max - eval_fmd_min) / eval_fmd_slice
+            
+            # 각 interval을 순회하며 eval_fmd_value(interval의 중앙값)과 right_ratio을 구함
+            for interval_offset in range(eval_fmd_slice):
+                # 각 interval의 중앙값으로 eval_fmd에 할당
+                interval_min = eval_fmd_min + interval_offset*eval_fmd_interval_length; interval_max = eval_fmd_min + (interval_offset+1)*eval_fmd_interval_length
+                eval_fmd_value = (interval_min + interval_max) / 2
+                # 각 interval의 정분류 비율을 RR에 할당
+                upper_than_interval_min = 0
+                lower_than_interval_max = 0
+                if interval_offset != eval_fmd_slice-1:
+                    upper_than_interval_min = eval_fmds >= interval_min
+                    lower_than_interval_max = eval_fmds < interval_max
+                else:
+                    upper_than_interval_min = eval_fmds >= interval_min
+                    lower_than_interval_max = eval_fmds <= interval_max
+
+                # eval_U에서 interval_value에 해당하는 마커를 찾음
+                interval_values_maker = np.logical_and(upper_than_interval_min, lower_than_interval_max)
+                is_right_interval_values = class_infos['eval_U'][eval_name][interval_values_maker]
+                R_count_value = len(np.nonzero(is_right_interval_values)[0]); W_count_value = len(is_right_interval_values) - R_count_value
+
+                R_count.append(R_count_value); W_count.append(W_count_value)
+                eval_fmd.append(eval_fmd_value)
+
+            R_count = np.array(R_count); W_count = np.array(W_count)
+            
+            R_ones = R_count.copy(); np.place(R_ones, R_ones > 0, 1)
+            W_ones = W_count.copy(); np.place(W_ones, W_ones > 0, 1)
+            
+            y_max = max(max(R_count),max(W_count)); y_min = min(min(R_count),min(W_count))
+            
+            if show_right_count == True:
+                plt.scatter(x=eval_fmd, y=R_count, c='blue', s=R_ones*point_size, alpha=point_alpha)
+            if show_wrong_count == True:
+                plt.scatter(x=eval_fmd, y=W_count, c='red', s=W_ones*point_size, alpha=point_alpha)
+
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
+            sorted_reval_fmds = sorted(reval_fmds); sorted_weval_fmds = sorted(weval_fmds)
+            total_size_reval_fmds = sorted_reval_fmds.__len__(); total_size_weval_fmds = sorted_weval_fmds.__len__()
+            unit_offset_reval_fmds = 100 / total_size_reval_fmds; unit_offset_weval_fmds = 100 / total_size_weval_fmds
+            previous_interval_index_reval_fmds = None; previous_interval_index_weval_fmds = None
+            current_interval_index_reval_fmds = None; current_interval_index_weval_fmds = None
+            first_point_in_interval_reval_fmds = []; first_point_in_interval_weval_fmds = []
+            
+            for i in range(total_size_reval_fmds):
+                offset = (i+1)*unit_offset_reval_fmds
+                current_interval_index_reval_fmds = offset//5 + 1
+                if current_interval_index_reval_fmds != 1 and previous_interval_index_reval_fmds != current_interval_index_reval_fmds:
+                    previous_interval_index_reval_fmds = current_interval_index_reval_fmds
+                    first_point_in_interval_reval_fmds.append((sorted_reval_fmds[i], offset, i, total_size_reval_fmds-i))
+            for i in range(total_size_weval_fmds):
+                offset = (i+1)*unit_offset_weval_fmds
+                current_interval_index_weval_fmds = offset//5 + 1
+                if current_interval_index_weval_fmds != 1 and previous_interval_index_weval_fmds != current_interval_index_weval_fmds:
+                    previous_interval_index_weval_fmds = current_interval_index_weval_fmds
+                    first_point_in_interval_weval_fmds.append((sorted_weval_fmds[i], offset, i, total_size_weval_fmds-i))
+            
+            for i in range(len(first_point_in_interval_reval_fmds)):
+                x_value = first_point_in_interval_reval_fmds[i][0]
+                offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
+                plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if i%5 == 0:
+                    plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 1:
+                    plt.text(x=x_value, y=y_max*(0.5+2*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 2:
+                    plt.text(x=x_value, y=y_max*(0.5+3*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 3:
+                    plt.text(x=x_value, y=y_max*(0.5+4*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 4:
+                    plt.text(x=x_value, y=y_max*(0.5+5*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+            for i in range(len(first_point_in_interval_weval_fmds)):
+                x_value = first_point_in_interval_weval_fmds[i][0]
+                offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
+                plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if i%5 == 0:
+                    plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 1:
+                    plt.text(x=x_value, y=y_max*(0.5-4*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 2:
+                    plt.text(x=x_value, y=y_max*(0.5-3*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 3:
+                    plt.text(x=x_value, y=y_max*(0.5-2*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 4:
+                    plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+            
+            HP_fmdcs = metric['HP_fmdcs']
+            HP_fmdc_values = []
+            for key in HP_fmdcs.keys():
+                plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                HP_fmdc_values.append(HP_fmdcs[key])
+            
+            plt.text(x=(min(eval_fmd) + max(eval_fmd))/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제
+            
+            plt.legend(loc='upper left', bbox_to_anchor=(1.0,1.0), fontsize=legend_fontsize)
+            plt.xticks(fontsize = xticks_fontsize)
+            plt.xlabel('feature map distance', {'size': f'{xlabel_fontsize}'})
+            plt.xlim(min(min(eval_fmd),min(HP_fmdc_values)), max(max(eval_fmd),max(HP_fmdc_values))) # interval에 아무것도 없는 것은 표하지 않음
+            plt.yticks(fontsize = yticks_fontsize)
+            plt.ylabel('right count / wrong count', {'size': f'{ylabel_fontsize}'})
+            plt.ylim(-0.1, y_max) # interval에 아무것도 없는 것은 표기하지 않음
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # subplot 행 정하기
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[column_count*width, row_count*height])
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_eval_fmd_right_count_wrong_count(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        if save_dir != "":
+            plt.savefig(f"{save_dir}/show_all_eval_fmd_right_count_wrong_count.png")
+        plt.show()
+    
+    def show_all_fmds_effectiveness_f1_score_recall(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+                                    width=9.6, height=9, column_count=5, effectiveness_width=10, effectiveness_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
+                                    labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4):
+                                    
+        def show_fmds_effectiveness_f1_score_recall(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            
+            eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
+            
+            sorted_eval_fmds = sorted(eval_fmds)
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
+            
+            U_effectiveness =  len(weval_fmds) / (len(reval_fmds) + len(weval_fmds))
+            
+            plt.plot([min(eval_fmds), max(eval_fmds)], [U_effectiveness, U_effectiveness], color='black', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='U Effectiveness')
+            
+            effectivenesses=[]; fmds=[]; recalls=[]; f1_scores=[]
+            for fmd in sorted_eval_fmds:
+                if fmd not in fmds:
+                    upper_than_fmd_reval = reval_fmds >= fmd; upper_than_fmd_wvalid = weval_fmds >= fmd
+                    selected_reval_fmds = reval_fmds[upper_than_fmd_reval]; selected_weval_fmds = weval_fmds[upper_than_fmd_wvalid]
+                    selected_reval_count = len(selected_reval_fmds); selected_weval_count = len(selected_weval_fmds); 
+                    unselected_reval_count = len(reval_fmds) - selected_reval_count; unselected_weval_count = len(weval_fmds) - selected_weval_count
+                    
+                    effectiveness = selected_weval_count / (selected_reval_count + selected_weval_count)
+                    recall = selected_weval_count / len(weval_fmds)
+                    TPR = unselected_reval_count / (unselected_reval_count + selected_reval_count)
+                    if unselected_reval_count + unselected_weval_count == 0:
+                        PPV = -1
+                    else:
+                        PPV = unselected_reval_count / (unselected_reval_count + unselected_weval_count)
+                    if PPV == -1 or PPV + TPR == 0:
+                        f1_score = -1
+                    else:
+                        f1_score = 2*((PPV*TPR) / (PPV + TPR))
+                    
+                    fmds.append(fmd)
+                    effectivenesses.append(effectiveness)
+                    recalls.append(recall)
+                    f1_scores.append(f1_score)
+            
+            y_min = 0; y_max = 1
+            
+            fmds_to_be_plotted=[]; effectivenesses_to_be_plotted=[]; recalls_to_be_plotted=[]; f1_scores_to_be_plotted=[]
+            for i in range(len(fmds)-1):
+                fmds_to_be_plotted.append(fmds[i]); fmds_to_be_plotted.append(fmds[i+1])
+                effectivenesses_to_be_plotted.append(effectivenesses[i]); effectivenesses_to_be_plotted.append(effectivenesses[i])
+                recalls_to_be_plotted.append(recalls[i]); recalls_to_be_plotted.append(recalls[i])
+                f1_scores_to_be_plotted.append(f1_scores[i]); f1_scores_to_be_plotted.append(f1_scores[i])
+        
+            plt.plot(fmds_to_be_plotted, effectivenesses_to_be_plotted, color='red', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='FMD Effectiveness')
+            plt.plot(fmds_to_be_plotted, recalls_to_be_plotted, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Recall')
+            plt.plot(fmds_to_be_plotted, f1_scores_to_be_plotted, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='F1 Score')
+            
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
+            sorted_reval_fmds = sorted(reval_fmds); sorted_weval_fmds = sorted(weval_fmds)
+            total_size_reval_fmds = sorted_reval_fmds.__len__(); total_size_weval_fmds = sorted_weval_fmds.__len__()
+            unit_offset_reval_fmds = 100 / total_size_reval_fmds; unit_offset_weval_fmds = 100 / total_size_weval_fmds
+            previous_interval_index_reval_fmds = None; previous_interval_index_weval_fmds = None
+            current_interval_index_reval_fmds = None; current_interval_index_weval_fmds = None
+            first_point_in_interval_reval_fmds = []; first_point_in_interval_weval_fmds = []
+            
+            for i in range(total_size_reval_fmds):
+                offset = (i+1)*unit_offset_reval_fmds
+                current_interval_index_reval_fmds = offset//5 + 1
+                if current_interval_index_reval_fmds != 1 and previous_interval_index_reval_fmds != current_interval_index_reval_fmds:
+                    previous_interval_index_reval_fmds = current_interval_index_reval_fmds
+                    first_point_in_interval_reval_fmds.append((sorted_reval_fmds[i], offset, i, total_size_reval_fmds-i))
+            for i in range(total_size_weval_fmds):
+                offset = (i+1)*unit_offset_weval_fmds
+                current_interval_index_weval_fmds = offset//5 + 1
+                if current_interval_index_weval_fmds != 1 and previous_interval_index_weval_fmds != current_interval_index_weval_fmds:
+                    previous_interval_index_weval_fmds = current_interval_index_weval_fmds
+                    first_point_in_interval_weval_fmds.append((sorted_weval_fmds[i], offset, i, total_size_weval_fmds-i))
+            
+            for i in range(len(first_point_in_interval_reval_fmds)):
+                x_value = first_point_in_interval_reval_fmds[i][0]
+                offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
+                plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if i%5 == 0:
+                    plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 1:
+                    plt.text(x=x_value, y=y_max*(0.5+2*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 2:
+                    plt.text(x=x_value, y=y_max*(0.5+3*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 3:
+                    plt.text(x=x_value, y=y_max*(0.5+4*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 4:
+                    plt.text(x=x_value, y=y_max*(0.5+5*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+            for i in range(len(first_point_in_interval_weval_fmds)):
+                x_value = first_point_in_interval_weval_fmds[i][0]
+                offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
+                plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if i%5 == 0:
+                    plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 1:
+                    plt.text(x=x_value, y=y_max*(0.5-4*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 2:
+                    plt.text(x=x_value, y=y_max*(0.5-3*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 3:
+                    plt.text(x=x_value, y=y_max*(0.5-2*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+                elif i%5 == 4:
+                    plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                            verticalalignment='center' , horizontalalignment='center')
+            
+            HP_fmdcs = metric['HP_fmdcs']
+            HP_fmdc_values = []
+            for key in HP_fmdcs.keys():
+                plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                HP_fmdc_values.append(HP_fmdcs[key])
+            
+            plt.text(x=(min(fmds) + max(fmds))/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제
+            
+            plt.legend(loc='upper left', bbox_to_anchor=(1.0,1.0), fontsize=legend_fontsize)
+            plt.xticks(fontsize = xticks_fontsize)
+            plt.xlabel('feature map distance', {'size': f'{xlabel_fontsize}'})
+            plt.xlim(min(min(fmds),min(HP_fmdc_values)), max(max(fmds),max(HP_fmdc_values))) # interval에 아무것도 없는 것은 표하지 않음
+            plt.yticks(fontsize = yticks_fontsize)
+            plt.ylabel('effectiveness', {'size': f'{ylabel_fontsize}'})
+            plt.ylim(-0.05, 1.05) # interval에 아무것도 없는 것은 표기하지 않음
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
+        
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # subplot 행 정하기
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[column_count*width, row_count*height])
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_fmds_effectiveness_f1_score_recall(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        if save_dir != "":
+            plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
+        plt.show()
+        
     def get_metric_name(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
         alpha_HP_str = ""
         if alpha_HP[0] == "rmw_max":
