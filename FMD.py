@@ -3739,6 +3739,16 @@ class FMD():
                         plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
                                 verticalalignment='center' , horizontalalignment='center')
             
+            fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
+            fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
+            fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
+            
+            fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"]]
+            
+            for fmdc, label in fmdc_percent:
+                if show_fmdcs == True:
+                    plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*2, alpha=HP_fmdc_alpha)
+            
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
@@ -3924,6 +3934,16 @@ class FMD():
                     elif i%5 == 4:
                         plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
                                 verticalalignment='center' , horizontalalignment='center')
+            
+            fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
+            fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
+            fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
+            
+            fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"]]
+            
+            for fmdc, label in fmdc_percent:
+                if show_fmdcs == True:
+                    plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*2, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
