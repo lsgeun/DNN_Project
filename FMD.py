@@ -3615,8 +3615,9 @@ class FMD():
         plt.show()
     
     def show_all_eval_fmd_right_count_wrong_count(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
-                                                    width=9.6, height=9, column_count=5, point_size=100, point_alpha=0.4, show_right_count=True, show_wrong_count=True, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
-                                                    labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4):
+                                                    width=9.6, height=9, column_count=5, point_size=100, point_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
+                                                    labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
+                                                    show_right_count=True, show_wrong_count=True, show_right_percent=True, show_wrong_percent=True):
                                                     
         def show_eval_fmd_right_count_wrong_count(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
@@ -3698,40 +3699,42 @@ class FMD():
                 x_value = first_point_in_interval_reval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
                 plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
-                if i%5 == 0:
-                    plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 1:
-                    plt.text(x=x_value, y=y_max*(0.5+2*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 2:
-                    plt.text(x=x_value, y=y_max*(0.5+3*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 3:
-                    plt.text(x=x_value, y=y_max*(0.5+4*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 4:
-                    plt.text(x=x_value, y=y_max*(0.5+5*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
+                if show_right_percent == True:
+                    if i%5 == 0:
+                        plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 1:
+                        plt.text(x=x_value, y=y_max*(0.5+2*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 2:
+                        plt.text(x=x_value, y=y_max*(0.5+3*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 3:
+                        plt.text(x=x_value, y=y_max*(0.5+4*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 4:
+                        plt.text(x=x_value, y=y_max*(0.5+5*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
             for i in range(len(first_point_in_interval_weval_fmds)):
                 x_value = first_point_in_interval_weval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
                 plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
-                if i%5 == 0:
-                    plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 1:
-                    plt.text(x=x_value, y=y_max*(0.5-4*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 2:
-                    plt.text(x=x_value, y=y_max*(0.5-3*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 3:
-                    plt.text(x=x_value, y=y_max*(0.5-2*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 4:
-                    plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
+                if show_wrong_percent == True:
+                    if i%5 == 0:
+                        plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 1:
+                        plt.text(x=x_value, y=y_max*(0.5-4*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 2:
+                        plt.text(x=x_value, y=y_max*(0.5-3*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 3:
+                        plt.text(x=x_value, y=y_max*(0.5-2*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 4:
+                        plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
@@ -3779,7 +3782,8 @@ class FMD():
     
     def show_all_fmds_effectiveness_f1_score_recall(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
                                     width=9.6, height=9, column_count=5, effectiveness_width=10, effectiveness_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
-                                    labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4):
+                                    labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
+                                    show_fmd_effectiveness=True, show_u_effectiveness=True, show_recall=True, show_f1_score=True, show_right_percent=True, show_wrong_percent=True):
                                     
         def show_fmds_effectiveness_f1_score_recall(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
@@ -3800,7 +3804,8 @@ class FMD():
             
             U_effectiveness =  len(weval_fmds) / (len(reval_fmds) + len(weval_fmds))
             
-            plt.plot([min(eval_fmds), max(eval_fmds)], [U_effectiveness, U_effectiveness], color='black', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='U Effectiveness')
+            if show_u_effectiveness == True:
+                plt.plot([min(eval_fmds), max(eval_fmds)], [U_effectiveness, U_effectiveness], color='black', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='U Effectiveness')
             
             effectivenesses=[]; fmds=[]; recalls=[]; f1_scores=[]
             for fmd in sorted_eval_fmds:
@@ -3836,9 +3841,12 @@ class FMD():
                 recalls_to_be_plotted.append(recalls[i]); recalls_to_be_plotted.append(recalls[i])
                 f1_scores_to_be_plotted.append(f1_scores[i]); f1_scores_to_be_plotted.append(f1_scores[i])
         
-            plt.plot(fmds_to_be_plotted, effectivenesses_to_be_plotted, color='red', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='FMD Effectiveness')
-            plt.plot(fmds_to_be_plotted, recalls_to_be_plotted, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Recall')
-            plt.plot(fmds_to_be_plotted, f1_scores_to_be_plotted, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='F1 Score')
+            if show_fmd_effectiveness == True:
+                plt.plot(fmds_to_be_plotted, effectivenesses_to_be_plotted, color='red', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='FMD Effectiveness')
+            if show_recall == True:
+                plt.plot(fmds_to_be_plotted, recalls_to_be_plotted, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Recall')
+            if show_f1_score == True:
+                plt.plot(fmds_to_be_plotted, f1_scores_to_be_plotted, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='F1 Score')
             
             reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
             sorted_reval_fmds = sorted(reval_fmds); sorted_weval_fmds = sorted(weval_fmds)
@@ -3865,40 +3873,42 @@ class FMD():
                 x_value = first_point_in_interval_reval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
                 plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
-                if i%5 == 0:
-                    plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 1:
-                    plt.text(x=x_value, y=y_max*(0.5+2*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 2:
-                    plt.text(x=x_value, y=y_max*(0.5+3*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 3:
-                    plt.text(x=x_value, y=y_max*(0.5+4*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 4:
-                    plt.text(x=x_value, y=y_max*(0.5+5*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
+                if show_right_percent == True:
+                    if i%5 == 0:
+                        plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 1:
+                        plt.text(x=x_value, y=y_max*(0.5+2*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 2:
+                        plt.text(x=x_value, y=y_max*(0.5+3*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 3:
+                        plt.text(x=x_value, y=y_max*(0.5+4*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 4:
+                        plt.text(x=x_value, y=y_max*(0.5+5*percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
             for i in range(len(first_point_in_interval_weval_fmds)):
                 x_value = first_point_in_interval_weval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
                 plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
-                if i%5 == 0:
-                    plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 1:
-                    plt.text(x=x_value, y=y_max*(0.5-4*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 2:
-                    plt.text(x=x_value, y=y_max*(0.5-3*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 3:
-                    plt.text(x=x_value, y=y_max*(0.5-2*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
-                elif i%5 == 4:
-                    plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
-                            verticalalignment='center' , horizontalalignment='center')
+                if show_wrong_percent == True:
+                    if i%5 == 0:
+                        plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 1:
+                        plt.text(x=x_value, y=y_max*(0.5-4*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 2:
+                        plt.text(x=x_value, y=y_max*(0.5-3*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 3:
+                        plt.text(x=x_value, y=y_max*(0.5-2*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
+                    elif i%5 == 4:
+                        plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
+                                verticalalignment='center' , horizontalalignment='center')
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
