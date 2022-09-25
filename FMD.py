@@ -3617,7 +3617,8 @@ class FMD():
     def show_all_eval_fmd_right_count_wrong_count(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
                                                     width=9.6, height=9, column_count=5, point_size=100, point_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
                                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
-                                                    show_right_count=True, show_wrong_count=True, show_right_percent=True, show_wrong_percent=True):
+                                                    guideline_interval=5, guideline_width=10, guideline_alpha=0.4, show_right_count=True, show_wrong_count=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
+                                                    show_fmdcs=True, show_right_percent_line=True, show_wrong_percent_line=True):
                                                     
         def show_eval_fmd_right_count_wrong_count(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
@@ -3698,7 +3699,8 @@ class FMD():
             for i in range(len(first_point_in_interval_reval_fmds)):
                 x_value = first_point_in_interval_reval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
-                plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if show_right_percent_line == True:
+                    plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_right_percent == True:
                     if i%5 == 0:
                         plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
@@ -3718,7 +3720,8 @@ class FMD():
             for i in range(len(first_point_in_interval_weval_fmds)):
                 x_value = first_point_in_interval_weval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
-                plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if show_wrong_percent_line == True:
+                    plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_wrong_percent == True:
                     if i%5 == 0:
                         plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
@@ -3739,8 +3742,17 @@ class FMD():
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
-                plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                if show_fmdcs == True:
+                    plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
                 HP_fmdc_values.append(HP_fmdcs[key])
+            
+            if show_guideline == True:
+                x=[min(eval_fmd)-1, max(eval_fmd)+1]
+                y=[]
+                for i in range(y_max//guideline_interval):
+                    y.append([(i+1)*guideline_interval, (i+1)*guideline_interval])
+                for y_i in y:
+                    plt.plot(x, y_i, linestyle=':', linewidth=guideline_width, alpha=guideline_alpha, color='gray')
             
             plt.text(x=(min(eval_fmd) + max(eval_fmd))/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제
             
@@ -3783,7 +3795,8 @@ class FMD():
     def show_all_fmds_effectiveness_f1_score_recall(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
                                     width=9.6, height=9, column_count=5, effectiveness_width=10, effectiveness_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
-                                    show_fmd_effectiveness=True, show_u_effectiveness=True, show_recall=True, show_f1_score=True, show_right_percent=True, show_wrong_percent=True):
+                                    guideline_width=10, guideline_alpha=0.4, show_fmd_effectiveness=True, show_u_effectiveness=True, show_recall=True, show_f1_score=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
+                                    show_fmdcs=True, show_right_percent_line=True, show_wrong_percent_line=True):
                                     
         def show_fmds_effectiveness_f1_score_recall(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
@@ -3872,7 +3885,8 @@ class FMD():
             for i in range(len(first_point_in_interval_reval_fmds)):
                 x_value = first_point_in_interval_reval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
-                plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if show_right_percent_line == True:
+                    plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_right_percent == True:
                     if i%5 == 0:
                         plt.text(x=x_value, y=y_max*(0.5+percent_intervalsize), s=offset_str, color='blue', fontdict={'size': f'{percent_fontsize}'},
@@ -3892,7 +3906,8 @@ class FMD():
             for i in range(len(first_point_in_interval_weval_fmds)):
                 x_value = first_point_in_interval_weval_fmds[i][0]
                 offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
-                plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
+                if show_wrong_percent_line == True:
+                    plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_wrong_percent == True:
                     if i%5 == 0:
                         plt.text(x=x_value, y=y_max*(0.5-5*percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
@@ -3913,8 +3928,15 @@ class FMD():
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
-                plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                if show_fmdcs == True:
+                    plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
                 HP_fmdc_values.append(HP_fmdcs[key])
+                
+            if show_guideline == True:
+                x = [min(fmds)-1, max(fmds)+1]
+                y = [[i*0.1, i*0.1] for i in range(10+1)]
+                for y_i in y:
+                    plt.plot(x, y_i, linestyle=':', linewidth=guideline_width, alpha=guideline_alpha, color='gray')
             
             plt.text(x=(min(fmds) + max(fmds))/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제
             
