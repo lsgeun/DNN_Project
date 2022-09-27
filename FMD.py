@@ -3614,7 +3614,7 @@ class FMD():
             plt.savefig(f"{save_dir}/accuracy.png")
         plt.show()
     
-    def show_all_eval_fmd_right_count_wrong_count(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+    def show_all_eval_fmd_right_count_wrong_count(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="", fmdc_names=[],
                                                     width=9.6, height=9, column_count=5, point_size=100, point_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
                                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
                                                     guideline_interval=5, guideline_width=10, guideline_alpha=0.4, show_right_count=True, show_wrong_count=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
@@ -3746,13 +3746,13 @@ class FMD():
             fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"]]
             
             for fmdc, label in fmdc_percent:
-                if show_fmdcs == True:
+                if label in fmdc_names and show_fmdcs == True:
                     plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*2, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
-                if show_fmdcs == True:
+                if key in fmdc_names and show_fmdcs == True:
                     plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
                 HP_fmdc_values.append(HP_fmdcs[key])
             
@@ -3802,7 +3802,7 @@ class FMD():
             plt.savefig(f"{save_dir}/show_all_eval_fmd_right_count_wrong_count.png")
         plt.show()
     
-    def show_all_fmds_effectiveness_f1_score_recall(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
+    def show_all_fmds_effectiveness_f1_score_recall(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="", fmdc_names=[],
                                     width=9.6, height=9, column_count=5, effectiveness_width=10, effectiveness_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
                                     guideline_width=10, guideline_alpha=0.4, show_fmd_effectiveness=True, show_u_effectiveness=True, show_recall=True, show_f1_score=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
@@ -3942,13 +3942,13 @@ class FMD():
             fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"]]
             
             for fmdc, label in fmdc_percent:
-                if show_fmdcs == True:
+                if label in fmdc_names and show_fmdcs == True:
                     plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*2, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
-                if show_fmdcs == True:
+                if key in fmdc_names and show_fmdcs == True:
                     plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
                 HP_fmdc_values.append(HP_fmdcs[key])
                 
