@@ -4080,7 +4080,7 @@ class FMD():
         plt.axis('tight')
                 
         if save_dir != "":
-            plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
+            plt.savefig(f"{save_dir}/all_fmds_effectiveness_f1_score_recall.png")
         plt.show()
     
     def show_all_fmdc_recall_precision_f1_score_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="", fmdc_names=[],
@@ -4228,7 +4228,7 @@ class FMD():
         plt.axis('tight')
         
         if save_dir != "":
-            plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
+            plt.savefig(f"{save_dir}/all_fmdc_recall_precision_f1_score_table.png")
         plt.show()
  
     def get_metric_name(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
