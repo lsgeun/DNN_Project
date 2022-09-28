@@ -4072,9 +4072,10 @@ class FMD():
         plt.show()
     
     def show_all_fmdc_recall_precision_f1_score_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="", fmdc_names=[],
-                                                        width=9.6, height=9, table_width=1, table_height=1, table_fontsize=16, column_count=5, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, labelname_fontsize=24,
-                                                        legend_fontsize=24, fmdc_width=10, fmdc_alpha=0.4, guideline_width=10, guideline_alpha=0.4, show_guideline=True):
-                                    
+                                                        width=9.6, height=9, table_width=1, table_height=1, table_fontsize=16, column_count=5):
+        
+        cell_values_set = []
+        
         def show_fmdc_recall_precision_f1_score_table(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
             metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
@@ -4087,7 +4088,6 @@ class FMD():
             # title 적기
             class_name = class_dir.split('/')[-1]
             
-            x_min=0; x_max=4; y_min = 0; y_max = 1
             eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
             reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
             
@@ -4152,32 +4152,17 @@ class FMD():
             recalls = np.array(recalls); precisions = np.array(precisions); f1_scores = np.array(f1_scores)
             cell_value = ['average', f'{recalls.mean(): .2f}', f'{precisions.mean(): .2f}', f'{f1_scores.mean(): .2f}']; cell_values.append(cell_value)
             
-            # if show_guideline == True:
-            #     x = [x_min, x_max]
-            #     y = [[i*0.1, i*0.1] for i in range(10+1)]
-            #     for y_i in y:
-            #         plt.plot(x, y_i, linestyle=':', linewidth=guideline_width, alpha=guideline_alpha, color='gray')
+            cell_values_set.append(cell_values)
             
             table = plt.table(cellText=cell_values, cellLoc='center', colLabels=column_names, colLoc='center', loc='center')
             table.set_fontsize(table_fontsize)
             table.scale(table_width, table_height)
             
-            # plt.text((x_min + x_max)/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'})
-            
-            # plt.legend(loc='upper left', bbox_to_anchor=(1.0,1.0), fontsize=legend_fontsize)
-            # plt.xticks(fontsize = xticks_fontsize)
-            # plt.xlabel('feature map distance', {'size': f'{xlabel_fontsize}'})
-            
-            # plt.xlim(x_min + x_max)
-            # plt.yticks(fontsize = yticks_fontsize)
-            # plt.ylabel('Recall / Precision / F1 Score', {'size': f'{ylabel_fontsize}'})
-            # plt.ylim(-0.1, 1.1)
-            
             plt.axis('off')
-            # plt.axis('tight')
+            plt.axis('tight')
 
         metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
-        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+
         is_there_all_data = True
         for i, class_dir in enumerate(class_dirs):
             if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
@@ -4185,20 +4170,50 @@ class FMD():
             else:
                 is_there_all_data = False
                 break
-        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+            
         if is_there_all_data == False:
             print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
             return
         
-        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
-        # subplot 행 정하기
-        row_count = (len(class_dirs)-1)//column_count + 1
-        # 한 그래프 크기 정하기
+        row_count = (len(class_dirs)+1-1)//column_count + 1
         plt.figure(figsize=[column_count*width, row_count*height])
-        # 그래프 그리기
         for i, class_dir in enumerate(class_dirs):
             subplot_index = [row_count, column_count, i+1]
             show_fmdc_recall_precision_f1_score_table(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        # 평균
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        
+        index_name = []
+        for cell_values in cell_values_set:
+            for cell_values_row in cell_values:
+                index_name.append(cell_values_row[0])
+        
+        for i, cell_values in enumerate(cell_values_set):
+            for j, cell_values_row in enumerate(cell_values):
+                cell_values[j] = cell_values_row[1:]
+            cell_values_set[i] = cell_values
+        
+        column_names=['Average', 'Recall', 'Precision', 'F1 Score']
+        
+        cell_values_set = np.array(cell_values_set, dtype='float')
+        cell_values_mean = cell_values_set.mean(axis=0)
+        
+        cell_values = []
+        for i, cell_values_mean_row in enumerate(cell_values_mean):
+            cell_values_row = []
+            cell_values_row.append(index_name[i])
+            for ele in cell_values_mean_row:
+                cell_values_row.append(f'{ele: 0.2f}')
+            cell_values.append(cell_values_row)
+            
+        table = plt.table(cellText=cell_values, cellLoc='center', colLabels=column_names, colLoc='center', loc='center')
+        table.set_fontsize(table_fontsize)
+        table.scale(table_width, table_height)
+        
+        plt.axis('off')
+        plt.axis('tight')
         
         if save_dir != "":
             plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
