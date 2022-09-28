@@ -2650,7 +2650,8 @@ class FMD():
         plt.show()
     
     def show_all_fmdc_TNR_TPR(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="",
-                                width=9.6, height=9, column_count=5, point_size=100, alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, labelname_fontsize=24, legend_fontsize=20, fmdc_names=[]):
+                                width=9.6, height=9, column_count=5, linewidth=5, alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, labelname_fontsize=24, legend_fontsize=20, fmdc_names=[],
+                                show_tpr=True, show_tnr=True, show_f1_score=True):
                                 
         def show_fmdc_TNR_TPR(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
@@ -2658,17 +2659,12 @@ class FMD():
             class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
             metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
             
-            # * 2 eval_fmd_right_ratio 그래프 그리기
-            # subplot 위치를 지정함
             plt.subplot(*subplot_index)
-            # title 적기
             class_name = class_dir.split('/')[-1]
-            # plt.title(f'{class_name}', fontdict={'size': '32'}) # ! 아마도 삭제
             
-            # * 2. fmdc_TNR_TPR 그래프 그리기
-            ones = np.ones(metric['fmdcs'][eval_name].__len__())
-            plt.scatter(x=metric['fmdcs'][eval_name], y=metric['TPR_fmdc'][eval_name], s=ones*point_size, alpha=alpha, c='blue', label='TPR')
-            plt.scatter(x=metric['fmdcs'][eval_name], y=metric['TNR_fmdc'][eval_name], s=ones*point_size, alpha=alpha, c='red', label='TNR')
+            # ones = np.ones(metric['fmdcs'][eval_name].__len__())
+            # plt.scatter(x=metric['fmdcs'][eval_name], y=metric['TPR_fmdc'][eval_name], s=ones*point_size, alpha=alpha, c='blue', label='TPR')
+            # plt.scatter(x=metric['fmdcs'][eval_name], y=metric['TNR_fmdc'][eval_name], s=ones*point_size, alpha=alpha, c='red', label='TNR')
 
             # * 3. HP_fmdcs, weval_fmds.min(), reval_fmds.max() 그리기
             # * 3.1. value_names에 그래프에 그릴 값과 이름을 모두 넣음.
@@ -2684,9 +2680,50 @@ class FMD():
             # weval_fmds.min(), reval_fmds.max()에 대한 값과 이을 모두 value_names에 넣음
             # reval_fmds: 정분류 평가 데이터에 대한 fmds, weval_fmds: 오분류 평가 데이터에 대한 fmds
             eval_fmds = metric['eval_fmds'][eval_name]
+            sorted_eval_fmds = sorted(eval_fmds)
             reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; reval_fmds_max = reval_fmds.max(); value_names.append([reval_fmds_max, f'reval_fmds_max_{eval_name}'])
             weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]; weval_fmds_min = weval_fmds.min(); value_names.append([weval_fmds_min, f'weval_fmds_min_{eval_name}'])
-
+            
+            fmds=[]; f1_scores=[]; precisions=[]; TNRs=[]; TPRs=[]
+            for fmd in sorted_eval_fmds:
+                if fmd not in fmds:
+                    upper_than_fmd_reval = reval_fmds >= fmd; upper_than_fmd_wvalid = weval_fmds >= fmd
+                    selected_reval_fmds = reval_fmds[upper_than_fmd_reval]; selected_weval_fmds = weval_fmds[upper_than_fmd_wvalid]
+                    selected_reval_count = len(selected_reval_fmds); selected_weval_count = len(selected_weval_fmds); 
+                    unselected_reval_count = len(reval_fmds) - selected_reval_count; unselected_weval_count = len(weval_fmds) - selected_weval_count
+                    
+                    TNR = selected_weval_count / (unselected_weval_count + selected_weval_count)
+                    recall = TNR
+                    TPR = unselected_reval_count / (unselected_reval_count + selected_reval_count)
+                    
+                    if selected_reval_count + selected_weval_count == 0:
+                        precision = -1
+                    else:
+                        precision = selected_weval_count / (selected_reval_count + selected_weval_count)
+                    if precision == -1 or precision + recall == 0:
+                        f1_score = -1
+                    else:
+                        f1_score = 2*((precision*recall) / (precision + recall))
+                    
+                    f1_scores.append(f1_score)
+                    fmds.append(fmd)
+                    TNRs.append(TNR)
+                    TPRs.append(TPR)
+            
+            fmds_to_be_plotted=[]; f1_scores_to_be_plotted=[]; TNRs_to_be_plotted=[]; TPRs_to_be_plotted=[]
+            for i in range(len(fmds)-1):
+                fmds_to_be_plotted.append(fmds[i]); fmds_to_be_plotted.append(fmds[i+1])
+                f1_scores_to_be_plotted.append(f1_scores[i]); f1_scores_to_be_plotted.append(f1_scores[i])
+                TNRs_to_be_plotted.append(TNRs[i]); TNRs_to_be_plotted.append(TNRs[i])
+                TPRs_to_be_plotted.append(TPRs[i]); TPRs_to_be_plotted.append(TPRs[i])
+            
+            if show_tnr == True:
+                plt.plot(fmds_to_be_plotted, TNRs_to_be_plotted, color='red', linewidth=linewidth, linestyle='-', alpha=alpha, label='TNR')
+            if show_tpr == True:
+                plt.plot(fmds_to_be_plotted, TPRs_to_be_plotted, color='blue', linewidth=linewidth, linestyle='-', alpha=alpha, label='TPR')
+            if show_f1_score == True:
+                plt.plot(fmds_to_be_plotted, f1_scores_to_be_plotted, color='black', linewidth=linewidth, linestyle='-', alpha=alpha, label='F1 Score')
+            
             # * 3.2. 실선 그리기
             for value, name in value_names:
                 if name in fmdc_names or name[:-6] in fmdc_names:
@@ -2700,9 +2737,10 @@ class FMD():
             plt.text(x=max(metric['fmdcs'][eval_name]), y=0.5, horizontalalignment = 'right', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제    
             
             plt.xticks(fontsize = xticks_fontsize)
-            plt.yticks(fontsize = yticks_fontsize)
             plt.xlabel('feature map distance criteria(threshold, fmdc)', {'size': f'{xlabel_fontsize}'})
-            plt.ylabel('TPR / TNR', {'size': f'{ylabel_fontsize}'})
+            plt.yticks(fontsize = yticks_fontsize)
+            plt.ylabel('TPR / TNR / F1 Score', {'size': f'{ylabel_fontsize}'})
+            plt.ylim(-0.1, 1.1)
         
         metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
         # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
@@ -2731,7 +2769,7 @@ class FMD():
         class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
         metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
         
-        labels = ['TPR', 'TNR']
+        labels = ['TPR', 'TNR', 'F1 Score']
         
         HP_fmdcs = metric['HP_fmdcs']; fmdc_HP = metric['fmdc_HP']
         for key in HP_fmdcs.keys():
@@ -2746,10 +2784,12 @@ class FMD():
         subplot_index = [row_count, column_count, len(class_dirs)+1]
         plt.subplot(*subplot_index)
         for label in labels:
-            if label == 'TPR':
+            if label == 'TPR' and show_tpr == True:
                 plt.plot(1, 1, 'bo', label=label)
-            elif label == 'TNR':
+            elif label == 'TNR' and show_tnr == True:
                 plt.plot(1, 1, 'ro', label=label)
+            elif label == 'F1 Score' and show_f1_score == True:
+                plt.plot(1, 1, 'ko', label=label)
             else:
                 if label in fmdc_names or label[:-6] in fmdc_names:
                     if label == "rvalid_fmds_average" or label[:-6] == "rvalid_fmds_average":
@@ -3617,7 +3657,7 @@ class FMD():
     def show_all_eval_fmd_right_count_wrong_count(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="", fmdc_names=[],
                                                     width=9.6, height=9, column_count=5, point_size=100, point_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
                                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
-                                                    guideline_interval=5, guideline_width=10, guideline_alpha=0.4, show_right_count=True, show_wrong_count=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
+                                                    guideline_interval=10, guideline_width=10, guideline_alpha=0.4, show_right_count=True, show_wrong_count=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
                                                     show_fmdcs=True, show_right_percent_line=True, show_wrong_percent_line=True):
                                                     
         def show_eval_fmd_right_count_wrong_count(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
@@ -3698,7 +3738,7 @@ class FMD():
             
             for i in range(len(first_point_in_interval_reval_fmds)):
                 x_value = first_point_in_interval_reval_fmds[i][0]
-                offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
+                offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + '\n' + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
                 if show_right_percent_line == True:
                     plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_right_percent == True:
@@ -3719,7 +3759,7 @@ class FMD():
                                 verticalalignment='center' , horizontalalignment='center')
             for i in range(len(first_point_in_interval_weval_fmds)):
                 x_value = first_point_in_interval_weval_fmds[i][0]
-                offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
+                offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + '\n' + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
                 if show_wrong_percent_line == True:
                     plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_wrong_percent == True:
@@ -3739,15 +3779,30 @@ class FMD():
                         plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
                                 verticalalignment='center' , horizontalalignment='center')
             
-            fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
-            fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
-            fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
+            fmdcs = []
+            for fmdc_name in fmdc_names:
+                if 'fmdc_' in fmdc_name:
+                    rvalid_percent_index = (int(fmdc_name.split('_')[-1]) // 5)
+                    wvalid_percent_index = (int(fmdc_name.split('_')[-2]) // 5) - 1 
+                    fmdcs.append([(first_point_in_interval_reval_fmds[-1-rvalid_percent_index][0] + first_point_in_interval_weval_fmds[wvalid_percent_index][0]) / 2, fmdc_name])
             
-            fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"]]
+            wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
             
-            for fmdc, label in fmdc_percent:
+            fmdcs.append([sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"])
+            
+            for fmdc, label in fmdcs:
                 if label in fmdc_names and show_fmdcs == True:
-                    plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*2, alpha=HP_fmdc_alpha)
+                    plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
+                    
+            # fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
+            # fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
+            # fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
+            
+            # fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"], [sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"]]
+            
+            # for fmdc, label in fmdc_percent:
+            #     if label in fmdc_names and show_fmdcs == True:
+            #         plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
@@ -3830,7 +3885,7 @@ class FMD():
             if show_u_effectiveness == True:
                 plt.plot([min(eval_fmds), max(eval_fmds)], [U_effectiveness, U_effectiveness], color='black', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='U Effectiveness')
             
-            effectivenesses=[]; fmds=[]; recalls=[]; f1_scores=[]
+            effectivenesses=[]; fmds=[]; recalls=[]; f1_scores=[]; precisions=[]
             for fmd in sorted_eval_fmds:
                 if fmd not in fmds:
                     upper_than_fmd_reval = reval_fmds >= fmd; upper_than_fmd_wvalid = weval_fmds >= fmd
@@ -3839,30 +3894,31 @@ class FMD():
                     unselected_reval_count = len(reval_fmds) - selected_reval_count; unselected_weval_count = len(weval_fmds) - selected_weval_count
                     
                     effectiveness = selected_weval_count / (selected_reval_count + selected_weval_count)
-                    recall = selected_weval_count / len(weval_fmds)
-                    TPR = unselected_reval_count / (unselected_reval_count + selected_reval_count)
-                    if unselected_reval_count + unselected_weval_count == 0:
-                        PPV = -1
+                    recall = selected_weval_count / (unselected_weval_count + selected_weval_count)
+                    if selected_reval_count + selected_weval_count == 0:
+                        precision = -1
                     else:
-                        PPV = unselected_reval_count / (unselected_reval_count + unselected_weval_count)
-                    if PPV == -1 or PPV + TPR == 0:
+                        precision = selected_weval_count / (selected_reval_count + selected_weval_count)
+                    if precision == -1 or precision + recall == 0:
                         f1_score = -1
                     else:
-                        f1_score = 2*((PPV*TPR) / (PPV + TPR))
+                        f1_score = 2*((precision*recall) / (precision + recall))
                     
                     fmds.append(fmd)
                     effectivenesses.append(effectiveness)
                     recalls.append(recall)
+                    precisions.append(precision)
                     f1_scores.append(f1_score)
             
             y_min = 0; y_max = 1
             
-            fmds_to_be_plotted=[]; effectivenesses_to_be_plotted=[]; recalls_to_be_plotted=[]; f1_scores_to_be_plotted=[]
+            fmds_to_be_plotted=[]; effectivenesses_to_be_plotted=[]; recalls_to_be_plotted=[]; f1_scores_to_be_plotted=[]; precisions_to_be_plotted=[]
             for i in range(len(fmds)-1):
                 fmds_to_be_plotted.append(fmds[i]); fmds_to_be_plotted.append(fmds[i+1])
                 effectivenesses_to_be_plotted.append(effectivenesses[i]); effectivenesses_to_be_plotted.append(effectivenesses[i])
                 recalls_to_be_plotted.append(recalls[i]); recalls_to_be_plotted.append(recalls[i])
                 f1_scores_to_be_plotted.append(f1_scores[i]); f1_scores_to_be_plotted.append(f1_scores[i])
+                precisions_to_be_plotted.append(precisions[i]); precisions_to_be_plotted.append(precisions[i])
         
             if show_fmd_effectiveness == True:
                 plt.plot(fmds_to_be_plotted, effectivenesses_to_be_plotted, color='red', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='FMD Effectiveness')
@@ -3870,6 +3926,8 @@ class FMD():
                 plt.plot(fmds_to_be_plotted, recalls_to_be_plotted, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Recall')
             if show_f1_score == True:
                 plt.plot(fmds_to_be_plotted, f1_scores_to_be_plotted, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='F1 Score')
+            
+            # plt.plot(fmds_to_be_plotted, precisions_to_be_plotted, color='orange', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Precision')
             
             reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
             sorted_reval_fmds = sorted(reval_fmds); sorted_weval_fmds = sorted(weval_fmds)
@@ -3894,7 +3952,7 @@ class FMD():
             
             for i in range(len(first_point_in_interval_reval_fmds)):
                 x_value = first_point_in_interval_reval_fmds[i][0]
-                offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
+                offset_str = f'{int(first_point_in_interval_reval_fmds[i][1])}'.strip() + '\n' + f'({first_point_in_interval_reval_fmds[i][2]}, {first_point_in_interval_reval_fmds[i][3]})'.strip()
                 if show_right_percent_line == True:
                     plt.plot([x_value, x_value], [y_min, y_max], 'bo', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_right_percent == True:
@@ -3915,7 +3973,7 @@ class FMD():
                                 verticalalignment='center' , horizontalalignment='center')
             for i in range(len(first_point_in_interval_weval_fmds)):
                 x_value = first_point_in_interval_weval_fmds[i][0]
-                offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
+                offset_str = f'{int(first_point_in_interval_weval_fmds[i][1])}'.strip() + '\n' + f'({first_point_in_interval_weval_fmds[i][2]}, {first_point_in_interval_weval_fmds[i][3]})'.strip()
                 if show_wrong_percent_line == True:
                     plt.plot([x_value, x_value], [y_min, y_max], 'ro', linestyle = '-', alpha=percent_alpha, linewidth=percent_width)
                 if show_wrong_percent == True:
@@ -3935,15 +3993,32 @@ class FMD():
                         plt.text(x=x_value, y=y_max*(0.5-percent_intervalsize), s=offset_str, color='red', fontdict={'size': f'{percent_fontsize}'},
                                 verticalalignment='center' , horizontalalignment='center')
             
-            fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
-            fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
-            fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
+            fmdcs = []
+            for fmdc_name in fmdc_names:
+                if 'fmdc_' in fmdc_name:
+                    rvalid_percent_index = (int(fmdc_name.split('_')[-1]) // 5)
+                    wvalid_percent_index = (int(fmdc_name.split('_')[-2]) // 5) - 1
+                    fmdcs.append([(first_point_in_interval_reval_fmds[-1-rvalid_percent_index][0] + first_point_in_interval_weval_fmds[wvalid_percent_index][0]) / 2, fmdc_name])
             
-            fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"]]
+            wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
             
-            for fmdc, label in fmdc_percent:
+            fmdcs.append([sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"])
+            
+            for fmdc, label in fmdcs:
                 if label in fmdc_names and show_fmdcs == True:
-                    plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*2, alpha=HP_fmdc_alpha)
+                    plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
+            
+            # fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
+            # fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
+            # fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
+            
+            # wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
+            
+            # fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"], [sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"]]
+            
+            # for fmdc, label in fmdc_percent:
+            #     if label in fmdc_names and show_fmdcs == True:
+            #         plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
@@ -3995,7 +4070,135 @@ class FMD():
         if save_dir != "":
             plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
         plt.show()
+    
+    def show_all_fmdc_recall_precision_f1_score_table(self, class_dirs, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test', save_dir="", fmdc_names=[],
+                                                        width=9.6, height=9, table_width=1, table_height=1, table_fontsize=16, column_count=5, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16, labelname_fontsize=24,
+                                                        legend_fontsize=24, fmdc_width=10, fmdc_alpha=0.4, guideline_width=10, guideline_alpha=0.4, show_guideline=True):
+                                    
+        def show_fmdc_recall_precision_f1_score_table(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
+            
+            metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+            class_infos_file = open(f"{class_dir}/class_infos.pickle", "rb"); class_infos = pickle.load(class_infos_file); class_infos_file.close()
+            metric_file = open(f"{class_dir}/metrics/{metric_name}.pickle", "rb"); metric = pickle.load(metric_file); metric_file.close()
+            
+            # * 2 eval_fmd_right_ratio 그래프 그리기
+            # subplot 위치를 지정함
+            plt.subplot(*subplot_index)
+            # title 적기
+            class_name = class_dir.split('/')[-1]
+            
+            x_min=0; x_max=4; y_min = 0; y_max = 1
+            eval_fmds = copy.deepcopy(metric['eval_fmds'][eval_name])
+            reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
+            
+            sorted_reval_fmds = sorted(reval_fmds); sorted_weval_fmds = sorted(weval_fmds)
+            total_size_reval_fmds = sorted_reval_fmds.__len__(); total_size_weval_fmds = sorted_weval_fmds.__len__()
+            unit_offset_reval_fmds = 100 / total_size_reval_fmds; unit_offset_weval_fmds = 100 / total_size_weval_fmds
+            previous_interval_index_reval_fmds = None; previous_interval_index_weval_fmds = None
+            current_interval_index_reval_fmds = None; current_interval_index_weval_fmds = None
+            first_point_in_interval_reval_fmds = []; first_point_in_interval_weval_fmds = []
+            
+            for i in range(total_size_reval_fmds):
+                offset = (i+1)*unit_offset_reval_fmds
+                current_interval_index_reval_fmds = offset//5 + 1
+                if current_interval_index_reval_fmds != 1 and previous_interval_index_reval_fmds != current_interval_index_reval_fmds:
+                    previous_interval_index_reval_fmds = current_interval_index_reval_fmds
+                    first_point_in_interval_reval_fmds.append((sorted_reval_fmds[i], offset, i, total_size_reval_fmds-i))
+            for i in range(total_size_weval_fmds):
+                offset = (i+1)*unit_offset_weval_fmds
+                current_interval_index_weval_fmds = offset//5 + 1
+                if current_interval_index_weval_fmds != 1 and previous_interval_index_weval_fmds != current_interval_index_weval_fmds:
+                    previous_interval_index_weval_fmds = current_interval_index_weval_fmds
+                    first_point_in_interval_weval_fmds.append((sorted_weval_fmds[i], offset, i, total_size_weval_fmds-i))
+            
+            # fmdc
+            fmdc_and_names = []
+            for fmdc_name in fmdc_names:
+                if 'fmdc_' in fmdc_name:
+                    rvalid_percent_index = (int(fmdc_name.split('_')[-1]) // 5)
+                    wvalid_percent_index = (int(fmdc_name.split('_')[-2]) // 5) - 1
+                    fmdc_and_names.append([(first_point_in_interval_reval_fmds[-1-rvalid_percent_index][0] + first_point_in_interval_weval_fmds[wvalid_percent_index][0]) / 2, fmdc_name])
+            
+            wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
+            fmdc_and_names.append([sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"])
+            
+            HP_fmdcs = metric['HP_fmdcs']
+            for key in HP_fmdcs.keys():
+                if key in fmdc_names:
+                    fmdc_and_names.append([HP_fmdcs[key], key])
+            
+            # 표
+            column_names=[f'{class_name}', 'Recall', 'Precision', 'F1 Score']; cell_values=[]
+            for fmdc, name in fmdc_and_names:
+                upper_than_fmd_reval = reval_fmds >= fmdc; upper_than_fmd_wvalid = weval_fmds >= fmdc
+                selected_reval_fmds = reval_fmds[upper_than_fmd_reval]; selected_weval_fmds = weval_fmds[upper_than_fmd_wvalid]
+                selected_reval_count = len(selected_reval_fmds); selected_weval_count = len(selected_weval_fmds); 
+                unselected_reval_count = len(reval_fmds) - selected_reval_count; unselected_weval_count = len(weval_fmds) - selected_weval_count
+                
+                recall = selected_weval_count / (unselected_weval_count + selected_weval_count)
+                if selected_reval_count + selected_weval_count == 0:
+                    precision = -1
+                else:
+                    precision = selected_weval_count / (selected_reval_count + selected_weval_count)
+                if precision == -1 or precision + recall == 0:
+                    f1_score = -1
+                else:
+                    f1_score = 2*((precision*recall) / (precision + recall))
+                
+                cell_value = [f'{name}', f'{recall: .2f}', f'{precision: .2f}', f'{f1_score:.2f}']; cell_values.append(cell_value)
+                
+            # if show_guideline == True:
+            #     x = [x_min, x_max]
+            #     y = [[i*0.1, i*0.1] for i in range(10+1)]
+            #     for y_i in y:
+            #         plt.plot(x, y_i, linestyle=':', linewidth=guideline_width, alpha=guideline_alpha, color='gray')
+            
+            table = plt.table(cellText=cell_values, cellLoc='center', colLabels=column_names, colLoc='center', loc='center')
+            table.set_fontsize(table_fontsize)
+            table.scale(table_width, table_height)
+            
+            # plt.text((x_min + x_max)/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'})
+            
+            # plt.legend(loc='upper left', bbox_to_anchor=(1.0,1.0), fontsize=legend_fontsize)
+            # plt.xticks(fontsize = xticks_fontsize)
+            # plt.xlabel('feature map distance', {'size': f'{xlabel_fontsize}'})
+            
+            # plt.xlim(x_min + x_max)
+            # plt.yticks(fontsize = yticks_fontsize)
+            # plt.ylabel('Recall / Precision / F1 Score', {'size': f'{ylabel_fontsize}'})
+            # plt.ylim(-0.1, 1.1)
+            
+            plt.axis('off')
+            # plt.axis('tight')
+
+        metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
+        # * 1. 모든 클래스에서 class_infos.pickle과  metric이 존재하는지 확인
+        is_there_all_data = True
+        for i, class_dir in enumerate(class_dirs):
+            if os.path.isfile(f"{class_dir}/class_infos.pickle") and os.path.isfile(f"{class_dir}/metrics/{metric_name}.pickle"):
+                pass
+            else:
+                is_there_all_data = False
+                break
+        # * 2. 어떤 클래스에서 class_infos.pickle나 metric거 존재하지 않는다면 에러 메세지를 출력 후 리턴
+        if is_there_all_data == False:
+            print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
+            return
         
+        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
+        # subplot 행 정하기
+        row_count = (len(class_dirs)-1)//column_count + 1
+        # 한 그래프 크기 정하기
+        plt.figure(figsize=[column_count*width, row_count*height])
+        # 그래프 그리기
+        for i, class_dir in enumerate(class_dirs):
+            subplot_index = [row_count, column_count, i+1]
+            show_fmdc_recall_precision_f1_score_table(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
+        
+        if save_dir != "":
+            plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
+        plt.show()
+ 
     def get_metric_name(self, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average'):
         alpha_HP_str = ""
         if alpha_HP[0] == "rmw_max":
