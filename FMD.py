@@ -3851,7 +3851,7 @@ class FMD():
                                     width=9.6, height=9, column_count=5, effectiveness_width=10, effectiveness_alpha=0.4, xlabel_fontsize=24, xticks_fontsize=16, ylabel_fontsize=24, yticks_fontsize=16,
                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
                                     guideline_width=10, guideline_alpha=0.4, show_fmd_effectiveness=True, show_u_effectiveness=True, show_recall=True, show_f1_score=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
-                                    show_fmdcs=True, show_right_percent_line=True, show_wrong_percent_line=True):
+                                    show_fmdcs=True, show_right_percent_line=True, show_wrong_percent_line=True, show_wvalid_fmds_middle_new=True, show_wvalid_fmds_middle_old=True):
         
         legend_names=[]
         
@@ -3993,7 +3993,7 @@ class FMD():
             
             fmdcs = []
             for fmdc_name in fmdc_names:
-                if 'fmdc_' in fmdc_name:
+                if 'fmdc_' in fmdc_name and show_fmdcs == True:
                     rvalid_percent_index = (int(fmdc_name.split('_')[-1]) // 5)
                     wvalid_percent_index = (int(fmdc_name.split('_')[-2]) // 5) - 1
                     fmdcs.append([(first_point_in_interval_reval_fmds[-1-rvalid_percent_index][0] + first_point_in_interval_weval_fmds[wvalid_percent_index][0]) / 2, fmdc_name])
@@ -4002,9 +4002,10 @@ class FMD():
             
             wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
             
-            fmdcs.append([sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"])
-            if "wvalid_fmds_middle" not in legend_names:
-                legend_names.append("wvalid_fmds_middle")
+            if "wvalid_fmds_middle" in fmdc_names and show_wvalid_fmds_middle_new==True and show_fmdcs == True:
+                fmdcs.append([sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"])
+                if "wvalid_fmds_middle_new" not in legend_names:
+                    legend_names.append("wvalid_fmds_middle_new")
             
             for fmdc, label in fmdcs:
                 if show_fmdcs == True:
@@ -4014,9 +4015,15 @@ class FMD():
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
                 if key in fmdc_names and show_fmdcs == True:
-                    plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
-                    if key not in legend_names:
-                        legend_names.append(key)
+                    if key=="wvalid_fmds_middle":
+                        if show_wvalid_fmds_middle_old == True:
+                            plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                            if key+'_old' not in legend_names:
+                                legend_names.append(key+'_old')
+                    else:
+                        plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                        if key not in legend_names:
+                            legend_names.append(key)
                 HP_fmdc_values.append(HP_fmdcs[key])
                 
             if show_guideline == True:
@@ -4069,8 +4076,13 @@ class FMD():
                 plt.plot(1,1, label=legend_name, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha)
             elif legend_name == 'F1 Score':
                 plt.plot(1,1, label=legend_name, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha)
-            elif 'fmdc_' in legend_name or legend_name == 'wvalid_fmds_middle':
-                plt.plot(1,1, label=legend_name, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
+            elif 'fmdc_' in legend_name or 'wvalid_fmds_middle' in legend_name:
+                if legend_name=='wvalid_fmds_middle_new':
+                    plt.plot(1,1, label=legend_name[:-4], linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
+                elif legend_name=='wvalid_fmds_middle_old':
+                    plt.plot(1,1, label=legend_name[:-4], linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                else:
+                    plt.plot(1,1, label=legend_name, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
             else:
                 plt.plot(1,1, label=legend_name, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
                 
@@ -4078,7 +4090,7 @@ class FMD():
         
         plt.axis('off')
         plt.axis('tight')
-                
+        
         if save_dir != "":
             plt.savefig(f"{save_dir}/all_fmds_effectiveness_f1_score_recall.png")
         plt.show()
