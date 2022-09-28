@@ -4129,6 +4129,7 @@ class FMD():
             
             # 표
             column_names=[f'{class_name}', 'Recall', 'Precision', 'F1 Score']; cell_values=[]
+            recalls=[]; precisions=[]; f1_scores=[]
             for fmdc, name in fmdc_and_names:
                 upper_than_fmd_reval = reval_fmds >= fmdc; upper_than_fmd_wvalid = weval_fmds >= fmdc
                 selected_reval_fmds = reval_fmds[upper_than_fmd_reval]; selected_weval_fmds = weval_fmds[upper_than_fmd_wvalid]
@@ -4144,9 +4145,13 @@ class FMD():
                     f1_score = -1
                 else:
                     f1_score = 2*((precision*recall) / (precision + recall))
-                
+                    
+                recalls.append(recall); precisions.append(precision); f1_scores.append(f1_score); 
                 cell_value = [f'{name}', f'{recall: .2f}', f'{precision: .2f}', f'{f1_score:.2f}']; cell_values.append(cell_value)
-                
+            
+            recalls = np.array(recalls); precisions = np.array(precisions); f1_scores = np.array(f1_scores)
+            cell_value = ['average', f'{recalls.mean(): .2f}', f'{precisions.mean(): .2f}', f'{f1_scores.mean(): .2f}']; cell_values.append(cell_value)
+            
             # if show_guideline == True:
             #     x = [x_min, x_max]
             #     y = [[i*0.1, i*0.1] for i in range(10+1)]
