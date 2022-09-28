@@ -3793,16 +3793,6 @@ class FMD():
             for fmdc, label in fmdcs:
                 if label in fmdc_names and show_fmdcs == True:
                     plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
-                    
-            # fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
-            # fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
-            # fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
-            
-            # fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"], [sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"]]
-            
-            # for fmdc, label in fmdc_percent:
-            #     if label in fmdc_names and show_fmdcs == True:
-            #         plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
@@ -3862,7 +3852,9 @@ class FMD():
                                     labelname_fontsize=24, percent_fontsize=16, percent_intervalsize=0.02, percent_alpha=0.4, percent_width=1, legend_fontsize=24, HP_fmdc_width=10, HP_fmdc_alpha=0.4,
                                     guideline_width=10, guideline_alpha=0.4, show_fmd_effectiveness=True, show_u_effectiveness=True, show_recall=True, show_f1_score=True, show_right_percent=True, show_wrong_percent=True, show_guideline=True,
                                     show_fmdcs=True, show_right_percent_line=True, show_wrong_percent_line=True):
-                                    
+        
+        legend_names=[]
+        
         def show_fmds_effectiveness_f1_score_recall(subplot_index, class_dir, FM_repre_HP='FM_mean', alpha_HP=['rmw_max', 1000], DAM_HP='all', lfmd_HP='se_lfmd', W_HP='C', fmdc_HP='rvalid_fmds_average', eval_name='test'):
             
             metric_name=self.get_metric_name(FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP)
@@ -3884,6 +3876,8 @@ class FMD():
             
             if show_u_effectiveness == True:
                 plt.plot([min(eval_fmds), max(eval_fmds)], [U_effectiveness, U_effectiveness], color='black', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='U Effectiveness')
+                if 'U Effectiveness' not in legend_names:
+                    legend_names.append('U Effectiveness')
             
             effectivenesses=[]; fmds=[]; recalls=[]; f1_scores=[]; precisions=[]
             for fmd in sorted_eval_fmds:
@@ -3922,12 +3916,16 @@ class FMD():
         
             if show_fmd_effectiveness == True:
                 plt.plot(fmds_to_be_plotted, effectivenesses_to_be_plotted, color='red', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='FMD Effectiveness')
+                if 'FMD Effectiveness' not in legend_names:
+                    legend_names.append('FMD Effectiveness')
             if show_recall == True:
                 plt.plot(fmds_to_be_plotted, recalls_to_be_plotted, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Recall')
+                if 'Recall' not in legend_names:
+                    legend_names.append('Recall')
             if show_f1_score == True:
                 plt.plot(fmds_to_be_plotted, f1_scores_to_be_plotted, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='F1 Score')
-            
-            # plt.plot(fmds_to_be_plotted, precisions_to_be_plotted, color='orange', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha, label='Precision')
+                if 'F1 Score' not in legend_names:
+                    legend_names.append('F1 Score')
             
             reval_fmds = eval_fmds[class_infos['eval_U'][eval_name]]; weval_fmds = eval_fmds[np.logical_not(class_infos['eval_U'][eval_name])]
             sorted_reval_fmds = sorted(reval_fmds); sorted_weval_fmds = sorted(weval_fmds)
@@ -3999,32 +3997,26 @@ class FMD():
                     rvalid_percent_index = (int(fmdc_name.split('_')[-1]) // 5)
                     wvalid_percent_index = (int(fmdc_name.split('_')[-2]) // 5) - 1
                     fmdcs.append([(first_point_in_interval_reval_fmds[-1-rvalid_percent_index][0] + first_point_in_interval_weval_fmds[wvalid_percent_index][0]) / 2, fmdc_name])
+                    if fmdc_name not in legend_names:
+                        legend_names.append(fmdc_name)
             
             wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
             
             fmdcs.append([sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"])
+            if "wvalid_fmds_middle" not in legend_names:
+                legend_names.append("wvalid_fmds_middle")
             
             for fmdc, label in fmdcs:
-                if label in fmdc_names and show_fmdcs == True:
+                if show_fmdcs == True:
                     plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
-            
-            # fmdc_10 = (first_point_in_interval_weval_fmds[1][0] + first_point_in_interval_weval_fmds[-3][0]) / 2
-            # fmdc_20 = (first_point_in_interval_weval_fmds[1+2][0] + first_point_in_interval_weval_fmds[-3-2][0]) / 2
-            # fmdc_30 = (first_point_in_interval_weval_fmds[1+4][0] + first_point_in_interval_weval_fmds[-3-4][0]) / 2
-            
-            # wvalid_fmds = metric['wvalid_fmds']; sorted_wvalid_fmds = sorted(wvalid_fmds)
-            
-            # fmdc_percent = [[fmdc_10, "fmdc_10"], [fmdc_20, "fmdc_20"], [fmdc_30, "fmdc_30"], [sorted_wvalid_fmds[sorted_wvalid_fmds.__len__() // 2], "wvalid_fmds_middle"]]
-            
-            # for fmdc, label in fmdc_percent:
-            #     if label in fmdc_names and show_fmdcs == True:
-            #         plt.plot([fmdc, fmdc], [y_min, y_max], label=label, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
             
             HP_fmdcs = metric['HP_fmdcs']
             HP_fmdc_values = []
             for key in HP_fmdcs.keys():
                 if key in fmdc_names and show_fmdcs == True:
                     plt.plot([HP_fmdcs[key], HP_fmdcs[key]], [y_min, y_max], label=key, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                    if key not in legend_names:
+                        legend_names.append(key)
                 HP_fmdc_values.append(HP_fmdcs[key])
                 
             if show_guideline == True:
@@ -4035,7 +4027,6 @@ class FMD():
             
             plt.text(x=(min(fmds) + max(fmds))/2, y=y_max*9/10 + y_min*1/10, horizontalalignment = 'center', s=f'{class_name}', fontdict={'size': f'{labelname_fontsize}'}) # ! 아마도 삭제
             
-            plt.legend(loc='upper left', bbox_to_anchor=(1.0,1.0), fontsize=legend_fontsize)
             plt.xticks(fontsize = xticks_fontsize)
             plt.xlabel('feature map distance', {'size': f'{xlabel_fontsize}'})
             plt.xlim(min(min(fmds),min(HP_fmdc_values)), max(max(fmds),max(HP_fmdc_values))) # interval에 아무것도 없는 것은 표하지 않음
@@ -4057,16 +4048,37 @@ class FMD():
             print("어떤 클래스에서 class_infos나 metric이 존재하지 않음")
             return
         
-        # * 3. 모든 클래스에 대한 eval_fmd_right_ratio을 그림
-        # subplot 행 정하기
-        row_count = (len(class_dirs)-1)//column_count + 1
-        # 한 그래프 크기 정하기
+        # 그래프
+        row_count = (len(class_dirs)+1-1)//column_count + 1
         plt.figure(figsize=[column_count*width, row_count*height])
-        # 그래프 그리기
+        
         for i, class_dir in enumerate(class_dirs):
             subplot_index = [row_count, column_count, i+1]
             show_fmds_effectiveness_f1_score_recall(subplot_index=subplot_index, class_dir=class_dir, FM_repre_HP=FM_repre_HP, alpha_HP=alpha_HP, DAM_HP=DAM_HP, lfmd_HP=lfmd_HP, W_HP=W_HP, fmdc_HP=fmdc_HP, eval_name=eval_name)
         
+        # legend
+        subplot_index = [row_count, column_count, len(class_dirs)+1]
+        plt.subplot(*subplot_index)
+        
+        for legend_name in legend_names:
+            if legend_name == 'U Effectiveness':
+                plt.plot(1,1, label=legend_name, color='black', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha)
+            elif legend_name == 'FMD Effectiveness':
+                plt.plot(1,1, label=legend_name, color='red', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha)
+            elif legend_name == 'Recall':
+                plt.plot(1,1, label=legend_name, color='green', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha)
+            elif legend_name == 'F1 Score':
+                plt.plot(1,1, label=legend_name, color='purple', linewidth=effectiveness_width, linestyle='-', alpha=effectiveness_alpha)
+            elif 'fmdc_' in legend_name or legend_name == 'wvalid_fmds_middle':
+                plt.plot(1,1, label=legend_name, linewidth=HP_fmdc_width*1.5, alpha=HP_fmdc_alpha)
+            else:
+                plt.plot(1,1, label=legend_name, linewidth=HP_fmdc_width, alpha=HP_fmdc_alpha)
+                
+        plt.legend(loc='upper left', bbox_to_anchor=(0.0,1.0), fontsize=legend_fontsize)
+        
+        plt.axis('off')
+        plt.axis('tight')
+                
         if save_dir != "":
             plt.savefig(f"{save_dir}/show_all_fmds_effectiveness.png")
         plt.show()
